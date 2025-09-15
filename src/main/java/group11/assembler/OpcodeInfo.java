@@ -3,9 +3,10 @@ public class OpcodeInfo {
     private int opcode;        // the numeric opcode (e.g., 01 for LDR)
     private int operandCount;  // how many operands (e.g., 3 for LDR r,x,addr)
     private boolean indirectAllowed; // does it support indirect addressing?
+    private Array 
 
     // constructor
-    public OpcodeInfo(int opcode, int operandCount, boolean indirectAllowed) {
+    public OpcodeInfo(int opcode, int operandCount, boolean indirectAllowed, argConfiguration) {
         this.opcode = opcode;
         this.operandCount = operandCount;
         this.indirectAllowed = indirectAllowed;
