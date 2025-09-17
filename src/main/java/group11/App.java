@@ -1,5 +1,7 @@
 package group11;
 
+import group11.assembler.Assembler;
+
 /**
  * Hello world!
  *
@@ -8,6 +10,8 @@ public class App
 {
     public static void main( String[] args )
     {
-        System.out.println( "Hello World!" );
+
+        Assembler assembler = new Assembler();
+        assembler.assemble();
     }
 }

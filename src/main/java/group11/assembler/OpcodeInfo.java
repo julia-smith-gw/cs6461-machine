@@ -1,27 +1,35 @@
 package group11.assembler;
+
+import java.util.function.Function;
+
 public class OpcodeInfo {
     private int opcode;        // the numeric opcode (e.g., 01 for LDR)
-    private int operandCount;  // how many operands (e.g., 3 for LDR r,x,addr)
-    private boolean indirectAllowed; // does it support indirect addressing?
-    private Array 
+    private ArgTypes[] argConfiguration;
+    private int[] argNumber;
+    Function<int[], Integer> encoder;
 
     // constructor
-    public OpcodeInfo(int opcode, int operandCount, boolean indirectAllowed, argConfiguration) {
+    public OpcodeInfo(int opcode, int [] argNumber,  ArgTypes[] argConfiguration, Function<int[], Integer> encoder) {
         this.opcode = opcode;
-        this.operandCount = operandCount;
-        this.indirectAllowed = indirectAllowed;
+        this.argConfiguration= argConfiguration;
+        this.argNumber=argNumber;
+        this.encoder=encoder;
+    }
+
+    public int getMinArgs(){
+        return argNumber[0];
+    }
+
+    public int getMaxArgs(){
+        return argNumber[1];
+    }
+
+    public ArgTypes[] getArgConfiguration(){
+        return this.argConfiguration;
     }
 
     // getters
     public int getOpcode() {
         return opcode;
-    }
-
-    public int getOperandCount() {
-        return operandCount;
-    }
-
-    public boolean isIndirectAllowed() {
-        return indirectAllowed;
     }
 }

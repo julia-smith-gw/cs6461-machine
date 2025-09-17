@@ -13,7 +13,7 @@ public class InstructionStringUtil {
         if (label == null) {
             op = instructionParts[0];
         }
-        return op;
+        return op.toUpperCase();
     }
 
     // validation needed: if arg start index is out of bounds of instructionParts

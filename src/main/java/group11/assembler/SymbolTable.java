@@ -2,7 +2,7 @@ package group11.assembler;
 import java.util.HashMap;
 import java.util.Map;
 public class SymbolTable {
-    private Map<String, Integer> symbols = new HashMap<>();
+ public  Map<String, Integer> symbols = new HashMap<>();
 
     public void addSymbol(String label, int address) {
         symbols.put(label, address);
@@ -11,4 +11,9 @@ public class SymbolTable {
     public int getAddress(String label) {
         return symbols.getOrDefault(label, -1);
     }
+
+    public boolean contains(String label) {
+        return symbols.containsKey(label);
+    }
+
 }

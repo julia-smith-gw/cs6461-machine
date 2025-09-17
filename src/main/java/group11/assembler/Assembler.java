@@ -19,75 +19,115 @@ public class Assembler {
   String assemblerFilePath;
 
   public void assemble() {
+    getFileInputPath();
     String content = readInputFile();
+    System.out.println("CONTENT");
+    System.out.println(content);
     String[] instructionLines = content.lines().toArray(String[]::new);
+
     // Pass 1: build symbol table
     AssemblerLabelResolver resolver = new AssemblerLabelResolver();
-    AssemblerConverter converters = new AssemblerConverter();
+    AssemblerConverter converter = new AssemblerConverter();
+
     try {
-      resolver.process(instructionLines);
-      // SomeType instructionOutputs = converter.convertInstructions(instructionLines,
-      // resolver.labels);
-    } catch (Throwable throwable) {
+      SymbolTable labels = resolver.process(instructionLines);
+      System.out.println("LABEL RESULT");
+      System.out.println("----LABEL RESULT END----");
+      for (String key : labels.symbols.keySet()) {
+            System.out.println("Key: " + key + ", Value: " + labels.symbols.get(key));
+        }
+      System.out.println("LABEL RESULT END");
+      HashMap<Integer, AssemblerConverterResult> conversionResult = converter.convertInstructions(instructionLines,
+          labels);
+      System.out.println("CONVERSION RESULT");
+      System.out.println("----CONVERSION RESULT----");
+        for (Integer key : conversionResult.keySet()) {
+            AssemblerConverterResult value = conversionResult.get(key); // Retrieve value using the key
+            System.out.println("Key: " + key + ", Value: " + value.getResultInOctal());
+        }
+      System.out.println("CONVERSION RESULT END");
+
+      // if (!converter.hasErrors) {
+      // outputLoadFile(conversionResult);
+      // }
+      // outputLoadFile(conversionResult);
+    } catch (Exception error) {
+      System.out.println(error.getMessage());
+      System.out.println(error.getStackTrace());
       System.out.println("Critical error occurred while parsing symbols. See listing file.");
     }
-
-    // Pass 2: generate machine code
-    // PassTwo passTwo = new PassTwo(symbolTable, opcodeTable);
-    // List<String> listing = passTwo.process(lines);
-
-    content.lines().forEach(line -> {
-
-    });
-
   }
 
   private void getFileInputPath() {
-    System.out.println("Please enter path to the assembler file to read");
-    try (Scanner filePathScanner = new Scanner(System.in)) {
+    boolean filePathValid = false;
+    File file = null;
+    Scanner filePathScanner = new Scanner(System.in);
+    do {
+      System.out.println("Please enter path to the assembler file to read");
       this.assemblerFilePath = filePathScanner.nextLine();
-    }
+      System.out.println("Trying to read path at " + this.assemblerFilePath);
+      file = new File(this.assemblerFilePath);
+      if (!file.exists()) {
+        System.out.println("Error: File not found. Please try again.");
+      } else if (!file.isFile()) {
+        System.out.println("Error: Path does not point to a file. Please try again.");
+      } else {
+        filePathValid = true;
+        System.out.println("Valid file found: " + file.getAbsolutePath());
+      }
+    } while (!filePathValid);
 
+    filePathScanner.close();
   }
 
   // https://www.w3schools.com/java/java_user_input.asp
   // https://www.java-success.com/reading-a-text-file-in-java-with-the-scanner/
   private String readInputFile() {
-      StringBuilder content = new StringBuilder();
-      // try with resource auto close the file
-      try (Scanner fileScanner = new Scanner(new File(this.assemblerFilePath))) {
-        while (fileScanner.hasNextLine()) {
-          content.append(fileScanner.nextLine()).append(System.lineSeparator());
-        }
-      } catch (FileNotFoundException e) {
-        this.assemblerFilePath = null;
-        e.printStackTrace();
+    StringBuilder content = new StringBuilder();
+    // try with resource auto close the file
+    try (Scanner fileScanner = new Scanner(new File(this.assemblerFilePath))) {
+      while (fileScanner.hasNextLine()) {
+        content.append(fileScanner.nextLine()).append(System.lineSeparator());
       }
-      return content.toString();
+    } catch (FileNotFoundException e) {
+      this.assemblerFilePath = null;
+      e.printStackTrace();
+      System.out.println("Please try a different file path.");
     }
+    return content.toString();
+  }
 
   // https://stackoverflow.com/questions/56004215/writing-to-a-text-file-line-by-line
-  private void outputListingFile(String[] errors) {
-    int index = 0;
-    try (BufferedWriter writer = new BufferedWriter(new FileWriter("listing-file.txt", true))) {
-      writer.write(this.rawInstructions[index]);
-      if (errors[index] != null) {
-        writer.write(" **ERROR**: ");
-      }
+  // private void outputListingFile( HashMap<Integer, AssemblerConverterResult>
+  // conversionResult) {
+  // int index = 0;
+  // StringBuilder content = new StringBuilder();
+  // try (BufferedWriter writer = new BufferedWriter(new
+  // FileWriter("listing-file.txt", true))) {
+  // writer.write(this.rawInstructions[index]);
+  // if (errors[index] != null) {
+  // writer.write(" **ERROR**: ");
+  // }
 
-      writer.newLine();
-    } catch (IOException ex) {
-      ex.printStackTrace();
-    }
+  // writer.newLine();
+  // } catch (IOException ex) {
+  // ex.printStackTrace();
+  // }
+  // }
 
-  }
-
-  private void outputLoadFile(HashMap<Integer, Integer> conversionResult) {
-
-  }
-
-  private String validateInstruction(Instruction instruction) {
-
-  }
-
+  // private void outputLoadFile(HashMap<Integer, AssemblerConverterResult>
+  // conversionResult) {
+  // int index = 0;
+  // StringBuilder content = new StringBuilder();
+  // try (BufferedWriter writer = new BufferedWriter(new
+  // FileWriter("load-file.txt", true))) {
+  // writer.write(this.rawInstructions[index]);
+  // if (errors[index] != null) {
+  // writer.write(" **ERROR**: ");
+  // }
+  // writer.newLine();
+  // } catch (IOException ex) {
+  // ex.printStackTrace();
+  // }
+  // }
 }

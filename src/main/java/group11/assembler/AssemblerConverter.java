@@ -1,51 +1,244 @@
 package group11.assembler;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
+// A lot of this file--specifically the validation utility functions and enum idea/parseArg for arg types
+// is derived at least partially from https://chatgpt.com/share/68c0a144-2a68-8007-b81c-48d71fa5f65b and 
+// https://chatgpt.com/share/68ca23d1-7968-8007-97c6-a270263b78a0
 public class AssemblerConverter {
+    HashMap<Integer, String> labels;
+    int locationCounter = 0;
+    boolean hasErrors = false;
 
-    AssemblerConverter() {
-
+    public int parseArg(String arg, ArgTypes configuration, SymbolTable labels) {
+        switch (configuration) {
+            case LOCATION:
+                int location = parseDecimal(arg);
+                return location;
+            case DATA:
+                int dataValue = 0;
+                if (labels.contains(arg)) {
+                    System.out.println("DATA RESULT LABEL");
+                    dataValue = labels.getAddress(arg);
+                } else {
+                    System.out.println("DATA RESULT DECIMAL");
+                    dataValue = parseDecimal(arg);
+                }
+                System.out.println("DATA RESULT");
+                System.out.println(dataValue);
+                return dataValue;
+            case REGISTER:
+                int register = parseRegister(arg);
+                return register;
+            case INDEX_REGISTER:
+                int indexRegister = parseIndexRegister(arg);
+                return indexRegister;
+            case ADDRESS:
+                int destinationAddress = parseAddressOrLabel(arg, labels);
+                return destinationAddress;
+            case IMMEDIATE:
+                int imm = parseAddressOrLabel(arg, labels);
+                if (imm < 0 || imm > 31)
+                    throw new IllegalArgumentException("Immediate out of range");
+                return imm;
+            case DEVICE:
+                int dev = parseAddressOrLabel(arg, labels);
+                if (dev < 0 || dev > 31)
+                    throw new IllegalArgumentException("Device id out of range");
+                return dev;
+            case COUNT:
+                int c = Integer.parseInt(arg);
+                if (c < 0 || c > 15)
+                    throw new IllegalArgumentException("Shift count out of range");
+                return c;
+            case LR:
+                int flag = 0;
+                if ("L".equalsIgnoreCase(arg)) {
+                    flag = 1;
+                } else if ("R".equalsIgnoreCase(arg)) {
+                    flag = 0;
+                } else {
+                    throw new IllegalArgumentException("Flag must be L (shift left) or R (shift right)");
+                }
+                return flag;
+            case AL:
+                int alFlag = 0;
+                if ("A".equalsIgnoreCase(arg)) {
+                    alFlag = 0;
+                } else if ("L".equalsIgnoreCase(arg)) {
+                    alFlag = 1;
+                } else {
+                    throw new IllegalArgumentException("Flag must be A (arithmetic) or L (logical)");
+                }
+                return alFlag;
+            case IA_FLAG:
+                int iaFlag = parseIndirectAddressingFlag(arg);
+                return iaFlag;
+            case CONDITION_CODE:
+                int cc = parseDecimal(arg);
+                if (cc < 0 || cc > 3) {
+                    throw new IllegalArgumentException("Condition code can be 0, 1, 2, or 3");
+                }
+                return cc;
+            case NONE:
+            default:
+                return 0;
+        }
     }
 
-    public String[] convertInstructions(String[] instructions, SymbolTable labels) {
+    public Integer encodeInstruction(String instruction, OpcodeTable opcodeTable, SymbolTable labels) throws Exception {
+        String[] instructionParts = instruction.trim().split("\\s+");
+        String label = InstructionStringUtil.extractLabel(instructionParts);
+        String op = InstructionStringUtil.extractOp(instructionParts, label);
+        int argStartIndex = label != null ? 2 : 1;
+        String[] args = InstructionStringUtil.extractArgs(instructionParts, argStartIndex);
+
+        OpcodeInfo opcodeInfo = opcodeTable.lookup(op);
+        if (opcodeInfo == null) {
+            throw new NoSuchElementException("Op code not recognized at line");
+        }
+
+        ArgTypes[] bitCodeConfig = opcodeInfo.getArgConfiguration();
+        int minArgs = opcodeInfo.getMinArgs();
+        int maxArgs = opcodeInfo.getMaxArgs();
+        if (args.length < minArgs || args.length > maxArgs) {
+            throw new IllegalArgumentException(
+                    "Wrong operand count for " + op + ". Operands should be minimum " + minArgs + " and maximum "
+                            + maxArgs);
+        }
+        ;
+
+        int[] processedArgs = new int[maxArgs];
+
+        for (int i = 0; i < args.length; ++i) {
+            ArgTypes configuration = bitCodeConfig[i];
+            int processedArg = parseArg(args[i], configuration, labels);
+            processedArgs[i] = processedArg;
+        }
+
+        if (op.equalsIgnoreCase("LOC")) {
+            this.locationCounter = processedArgs[0];
+        }
+
+        return opcodeInfo.encoder.apply(processedArgs);
+    }
+
+    static int parseRegister(String s) throws IllegalArgumentException {
+        s = s.trim().toUpperCase();
+        int register;
+
+        try {
+            register = s.charAt(0) == 'R' ? Integer.parseInt(s.substring(1)) : Integer.parseInt(s);
+        } catch (Throwable error) {
+            throw new IllegalArgumentException(
+                    "Invalid general register format: " + s + ". Register can be: 0, 1, 2, 3 or R0, R1, R2, R3.");
+        }
+
+        if (register < 0 || register > 3) {
+            throw new IllegalArgumentException("Register out of range. Register can be: 0, 1, 2, 3 or R0, R1, R2, R3.");
+        }
+
+        return register;
+    }
+
+    static int parseIndirectAddressingFlag(String s) throws IllegalArgumentException {
+        int indirectAddressingFlag = 0;
+        if (s != null && s.equalsIgnoreCase("I")) {
+            indirectAddressingFlag = 1;
+        } else {
+            throw new IllegalArgumentException("Last operand must be I (0/1) if present");
+        }
+        return indirectAddressingFlag;
+    }
+
+    static int parseIndexRegister(String s) throws IllegalArgumentException {
+        s = s.trim().toUpperCase();
+        int indexRegister;
+
+        if (s.equals("0"))
+            return 0;
+
+        try {
+            indexRegister = s.charAt(0) == 'X' ? Integer.parseInt(s.substring(1)) : Integer.parseInt(s);
+        } catch (Throwable error) {
+            throw new IllegalArgumentException(
+                    "Invalid index register format: " + s + ". Index can be: 0, 1, 2, 3 or X1, X2, X3.");
+        }
+
+        if (indexRegister < 1 || indexRegister > 3) {
+            throw new IllegalArgumentException(
+                    "Index register out of range. Register can be: 0, 1, 2, 3 or X1, X2, X3.");
+        }
+
+        return indexRegister;
+    }
+
+    static int parseAddressOrLabel(String s, SymbolTable labels) throws NoSuchElementException {
+        s = s.trim();
+        Integer val = tryParseDecimal(s);
+        if (val != null) {
+            return val;
+        }
+
+        int address = labels.getAddress(s);
+        if (address == -1) {
+            throw new IllegalArgumentException("Undefined label: " + s);
+        }
+
+        if (address < 0 || address > 31) {
+            throw new IllegalAccessError("Address for label" + s + " is out of memory range from 0 to 31.");
+        }
+        return address;
+    }
+
+    static int parseDecimal(String s) throws IllegalArgumentException {
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Not a decimal integer: " + s);
+        }
+    }
+
+    static Integer tryParseDecimal(String s) {
+        try {
+            return Integer.valueOf(s);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public HashMap<Integer, AssemblerConverterResult> convertInstructions(String[] instructions, SymbolTable labels) {
         OpcodeTable opcodeTable = new OpcodeTable();
-        int locationCounter = 0;
-        HashMap<Integer, Integer> conversionResult = new HashMap<>();
-        HashMap<Number, String> errors = new HashMap<>();
+        HashMap<Integer, AssemblerConverterResult> conversionResult = new HashMap<>();
+        boolean produceLoadFile = true;
+        this.hasErrors = false;
 
         for (int i = 0; i < instructions.length; ++i) {
             String instruction = instructions[i];
-            String[] instructionParts = instruction.trim().split("\\s+", 2);
-            String label = InstructionStringUtil.extractLabel(instructionParts);
-            String op = InstructionStringUtil.extractOp(instructionParts, label);
-            int argStartIndex = label != null ? 2 : 1;
-            String[] args = InstructionStringUtil.extractArgs(instructionParts, argStartIndex);
-
-            // int instruction = (opcode << 10) | (r << 8) | (ix << 6) | (i << 5) | address;
+            if (instruction.trim().isEmpty()){
+                continue;
+            }
+            System.out.println("NOW ENCODING AT INDEX " + i);
+            System.out.println(instruction);
             // validation needed to ensure correct behavior if op code info does not exist
-            OpcodeInfo opcodeInfo = opcodeTable.lookup(op);
-            int opcode = opcodeInfo.getOpcode();
-
-            int operationResult = 0;
-            operationResult = (opcode << 10);
-
-            // 16 - 6 bits to account for op
-
-            int bitsShift = 10;
-           // todo: add try/catch and behavior for returning output if args are bad
-           // String validateArgs = somevalidationfunction(opcodeInfo);
-           for (int argI = 0; argI < args.length; ++argI ) {
-            // how do we convert to appropraite number of bits for our bitwise shift??
-            int numberArg = Integer.parseInt(args[argI]);
-            bitsShift = bitsShift-opcodeInfo.args[argI].bits;
-            operationResult = operationResult | (numberArg << (bitsShift));
-           }
-           
-           conversionResult.put(locationCounter, operationResult);
-          // only return our conversionResult if there are no errors
+            try {
+                Integer encoding = encodeInstruction(instruction, opcodeTable, labels);
+                System.out.println("ENCODING AT INDEX " + i + ": " + encoding);
+                if (encoding != null) {
+                    conversionResult.put(locationCounter, new AssemblerConverterResult(encoding, null));
+                    this.locationCounter += 1;
+                } 
+            } catch (Exception error) {
+                System.out.println(error.getMessage());
+                this.hasErrors = true;
+                conversionResult.put(locationCounter, new AssemblerConverterResult(-1, error.getMessage()));
+                this.locationCounter += 1;
+            }
         }
-
+        return conversionResult;
     }
 
 }
