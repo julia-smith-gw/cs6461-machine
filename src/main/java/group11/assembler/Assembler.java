@@ -25,32 +25,21 @@ public class Assembler {
     System.out.println(content);
     String[] instructionLines = content.lines().toArray(String[]::new);
 
+    HashMap<Integer, AssemblerConverterResult> conversionResult = new HashMap<>();
     // Pass 1: build symbol table
     AssemblerLabelResolver resolver = new AssemblerLabelResolver();
     AssemblerConverter converter = new AssemblerConverter();
 
     try {
-      SymbolTable labels = resolver.process(instructionLines);
-      System.out.println("LABEL RESULT");
-      System.out.println("----LABEL RESULT END----");
-      for (String key : labels.symbols.keySet()) {
-            System.out.println("Key: " + key + ", Value: " + labels.symbols.get(key));
-        }
-      System.out.println("LABEL RESULT END");
-      HashMap<Integer, AssemblerConverterResult> conversionResult = converter.convertInstructions(instructionLines,
-          labels);
-      System.out.println("CONVERSION RESULT");
-      System.out.println("----CONVERSION RESULT----");
-        for (Integer key : conversionResult.keySet()) {
-            AssemblerConverterResult value = conversionResult.get(key); // Retrieve value using the key
-            System.out.println("Key: " + key + ", Value: " + value.getResultInOctal());
-        }
-      System.out.println("CONVERSION RESULT END");
+      SymbolTable labels = resolver.process(instructionLines, conversionResult);
 
-      // if (!converter.hasErrors) {
-      // outputLoadFile(conversionResult);
-      // }
-      // outputLoadFile(conversionResult);
+      converter.convertInstructions(instructionLines,
+          labels, conversionResult);
+
+      if (!converter.hasErrors && !resolver.hasErrors) {
+        outputLoadFile(conversionResult);
+      }
+      outputListingFile(conversionResult);
     } catch (Exception error) {
       System.out.println(error.getMessage());
       System.out.println(error.getStackTrace());
@@ -98,22 +87,20 @@ public class Assembler {
   }
 
   // https://stackoverflow.com/questions/56004215/writing-to-a-text-file-line-by-line
-  // private void outputListingFile( HashMap<Integer, AssemblerConverterResult>
-  // conversionResult) {
-  // int index = 0;
-  // StringBuilder content = new StringBuilder();
-  // try (BufferedWriter writer = new BufferedWriter(new
-  // FileWriter("listing-file.txt", true))) {
-  // writer.write(this.rawInstructions[index]);
-  // if (errors[index] != null) {
-  // writer.write(" **ERROR**: ");
-  // }
+  private void outputListingFile(HashMap<Integer, AssemblerConverterResult> conversionResult) {
+    int index = 0;
+    StringBuilder content = new StringBuilder();
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter("listing-file.txt", true))) {
+      writer.write(this.rawInstructions[index]);
+      if (errors[index] != null) {
+        writer.write(" **ERROR**: ");
+      }
 
-  // writer.newLine();
-  // } catch (IOException ex) {
-  // ex.printStackTrace();
-  // }
-  // }
+      writer.newLine();
+    } catch (IOException ex) {
+      ex.printStackTrace();
+    }
+  }
 
   // private void outputLoadFile(HashMap<Integer, AssemblerConverterResult>
   // conversionResult) {

@@ -21,14 +21,11 @@ public class AssemblerConverter {
             case DATA:
                 int dataValue = 0;
                 if (labels.contains(arg)) {
-                    System.out.println("DATA RESULT LABEL");
                     dataValue = labels.getAddress(arg);
                 } else {
-                    System.out.println("DATA RESULT DECIMAL");
+
                     dataValue = parseDecimal(arg);
                 }
-                System.out.println("DATA RESULT");
-                System.out.println(dataValue);
                 return dataValue;
             case REGISTER:
                 int register = parseRegister(arg);
@@ -218,23 +215,23 @@ public class AssemblerConverter {
 
         for (int i = 0; i < instructions.length; ++i) {
             String instruction = instructions[i];
+
+            // do not process empty instruction lines
             if (instruction.trim().isEmpty()){
                 continue;
             }
-            System.out.println("NOW ENCODING AT INDEX " + i);
-            System.out.println(instruction);
-            // validation needed to ensure correct behavior if op code info does not exist
+
+            // if encoding fails, mark assembler process as having errors and place error in result dictionary
             try {
                 Integer encoding = encodeInstruction(instruction, opcodeTable, labels);
-                System.out.println("ENCODING AT INDEX " + i + ": " + encoding);
                 if (encoding != null) {
-                    conversionResult.put(locationCounter, new AssemblerConverterResult(encoding, null));
+                    conversionResult.put(i, new AssemblerConverterResult(encoding, locationCounter, null));
                     this.locationCounter += 1;
                 } 
             } catch (Exception error) {
                 System.out.println(error.getMessage());
                 this.hasErrors = true;
-                conversionResult.put(locationCounter, new AssemblerConverterResult(-1, error.getMessage()));
+                conversionResult.put(i, new AssemblerConverterResult(-1, locationCounter, error.getMessage()));
                 this.locationCounter += 1;
             }
         }

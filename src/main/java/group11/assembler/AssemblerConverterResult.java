@@ -9,10 +9,16 @@ import java.util.NoSuchElementException;
 public class AssemblerConverterResult {
     String error = "";
     Integer conversionResult = -1;
+    Integer location=-1;
 
-    AssemblerConverterResult(Integer conversionResult, String error) {
+    AssemblerConverterResult(Integer conversionResult, Integer location, String error) {
         this.error = error;
         this.conversionResult = conversionResult;
+        this.location=location;
+    }
+
+    Integer getLocation(){
+        return this.location;
     }
 
     String getError() {
@@ -20,10 +26,12 @@ public class AssemblerConverterResult {
     }
 
     String getResultInOctal(){
-    return String.format("%06o", this.conversionResult);    
+    String formattedLocation = String.format("%06o", this.conversionResult);
+    String formattedConversionResult = String.format("%06o", this.conversionResult);   
+    return formattedLocation + " " + formattedConversionResult;    
     }
 
-    Integer getConversionResult() {
+    Integer getConversionResult () {
         return this.conversionResult;
     }
 
