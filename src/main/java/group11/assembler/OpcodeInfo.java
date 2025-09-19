@@ -8,8 +8,14 @@ public class OpcodeInfo {
     private int[] argNumber;
     Function<int[], Integer> encoder;
 
-    // constructor
-    public OpcodeInfo(int opcode, int [] argNumber,  ArgTypes[] argConfiguration, Function<int[], Integer> encoder) {
+    /**
+     * Constructor for op code info--object consisting of information needed to convert decimal arg info to octal
+     * @param opcode Decimal octal representation
+     * @param argNumber Decimal conversions of octal
+     * @param argConfiguration Array of ArgType configurations
+     * @param encoder Function to encode decimal representations as octal
+     */
+    public OpcodeInfo(int opcode, int[] argNumber, ArgTypes[] argConfiguration, Function<int[], Integer> encoder) {
         this.opcode = opcode;
         this.argConfiguration= argConfiguration;
         this.argNumber=argNumber;
@@ -28,7 +34,6 @@ public class OpcodeInfo {
         return this.argConfiguration;
     }
 
-    // getters
     public int getOpcode() {
         return opcode;
     }

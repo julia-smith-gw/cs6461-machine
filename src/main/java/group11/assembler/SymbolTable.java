@@ -1,6 +1,10 @@
 package group11.assembler;
 import java.util.HashMap;
 import java.util.Map;
+
+/**
+ * Table holding our labels mapped to a location in the assembler file
+ */
 public class SymbolTable {
  public  Map<String, Integer> symbols = new HashMap<>();
 

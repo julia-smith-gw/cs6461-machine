@@ -5,19 +5,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-
+/**
+ * Dictionary entry for result map that contains conversion result, location of
+ * converted result,
+ * and error (if occurred)
+ */
 public class AssemblerConverterResult {
     String error = "";
     Integer conversionResult = -1;
-    Integer location=-1;
+    Integer location = -1;
 
     AssemblerConverterResult(Integer conversionResult, Integer location, String error) {
         this.error = error;
         this.conversionResult = conversionResult;
-        this.location=location;
+        this.location = location;
     }
 
-    Integer getLocation(){
+    Integer getLocation() {
         return this.location;
     }
 
@@ -25,19 +29,18 @@ public class AssemblerConverterResult {
         return this.error;
     }
 
-    String getResultInOctal(){
-    String formattedLocation = String.format("%06o", this.conversionResult);
-    String formattedConversionResult = String.format("%06o", this.conversionResult);   
-    return formattedLocation + " " + formattedConversionResult;    
+    String getResultInOctal() {
+        String formattedLocation = String.format("%06o", this.location);
+        String formattedConversionResult = String.format("%06o", this.conversionResult);
+        return formattedLocation + " " + formattedConversionResult;
     }
 
-    Integer getConversionResult () {
+    Integer getConversionResult() {
         return this.conversionResult;
     }
 
     public String toString() {
         return "Result [Conversion: " + this.conversionResult + ", error " + this.error + "]";
     }
-
 
 }

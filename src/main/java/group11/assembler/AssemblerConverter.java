@@ -13,17 +13,28 @@ public class AssemblerConverter {
     int locationCounter = 0;
     boolean hasErrors = false;
 
+    /**
+     * Parses argument based on definition enum value for correctness
+     * 
+     * @param arg           Raw argument from instruction
+     * @param configuration ArgTypes enum value specifying arg type
+     * @param labels        Dictionary mapping location to labels
+     * @return Integer representation of arg
+     * @throws {Exception} Exception if arg parsing error occurred
+     */
     public int parseArg(String arg, ArgTypes configuration, SymbolTable labels) {
         switch (configuration) {
             case LOCATION:
                 int location = parseDecimal(arg);
+                if (location < 0) {
+                    throw new IllegalArgumentException("Location should be integer >= 0");
+                }
                 return location;
             case DATA:
                 int dataValue = 0;
                 if (labels.contains(arg)) {
                     dataValue = labels.getAddress(arg);
                 } else {
-
                     dataValue = parseDecimal(arg);
                 }
                 return dataValue;
@@ -86,7 +97,17 @@ public class AssemblerConverter {
         }
     }
 
+    /**
+     * Encodes individual instruction
+     * 
+     * @param instruction Raw instruction line
+     * @param opcodeTable Result table
+     * @param labels      Table mapping our locations to labels
+     * @return Octal representation of our instruction
+     * @throws Exception Error if some validation problem occurred
+     */
     public Integer encodeInstruction(String instruction, OpcodeTable opcodeTable, SymbolTable labels) throws Exception {
+        // extract instruction parts
         String[] instructionParts = instruction.trim().split("\\s+");
         String label = InstructionStringUtil.extractLabel(instructionParts);
         String op = InstructionStringUtil.extractOp(instructionParts, label);
@@ -95,7 +116,7 @@ public class AssemblerConverter {
 
         OpcodeInfo opcodeInfo = opcodeTable.lookup(op);
         if (opcodeInfo == null) {
-            throw new NoSuchElementException("Op code not recognized at line");
+            throw new NoSuchElementException("Op code not recognized");
         }
 
         ArgTypes[] bitCodeConfig = opcodeInfo.getArgConfiguration();
@@ -143,11 +164,21 @@ public class AssemblerConverter {
 
     static int parseIndirectAddressingFlag(String s) throws IllegalArgumentException {
         int indirectAddressingFlag = 0;
-        if (s != null && s.equalsIgnoreCase("I")) {
-            indirectAddressingFlag = 1;
-        } else {
-            throw new IllegalArgumentException("Last operand must be I (0/1) if present");
+        if (s != null) {
+            try {
+                indirectAddressingFlag = Integer.parseInt(s);
+                if (indirectAddressingFlag != 1 && indirectAddressingFlag != 0) {
+                    throw new IllegalArgumentException("IA flag must be 0/1 if present");
+                }
+            } catch (Exception error) {
+                if (s != null && s.equalsIgnoreCase("I")) {
+                    indirectAddressingFlag = 1;
+                } else {
+                    throw new IllegalArgumentException("Last operand must be I (0/1) if present");
+                }
+            }
         }
+
         return indirectAddressingFlag;
     }
 
@@ -207,9 +238,15 @@ public class AssemblerConverter {
         }
     }
 
-    public HashMap<Integer, AssemblerConverterResult> convertInstructions(String[] instructions, SymbolTable labels) {
+    /**
+     * Converts instructions to encoded representation line by line
+     * @param instructions Array of instruction lines
+     * @param labels Table mapping label to location
+     * @param conversionResult Map recording final conversion result and errors
+     */
+    public void convertInstructions(String[] instructions, SymbolTable labels,
+            HashMap<Integer, AssemblerConverterResult> conversionResult) {
         OpcodeTable opcodeTable = new OpcodeTable();
-        HashMap<Integer, AssemblerConverterResult> conversionResult = new HashMap<>();
         boolean produceLoadFile = true;
         this.hasErrors = false;
 
@@ -217,17 +254,18 @@ public class AssemblerConverter {
             String instruction = instructions[i];
 
             // do not process empty instruction lines
-            if (instruction.trim().isEmpty()){
+            if (instruction.trim().isEmpty()) {
                 continue;
             }
 
-            // if encoding fails, mark assembler process as having errors and place error in result dictionary
+            // if encoding fails, mark assembler process as having errors and place error in
+            // result dictionary
             try {
                 Integer encoding = encodeInstruction(instruction, opcodeTable, labels);
                 if (encoding != null) {
                     conversionResult.put(i, new AssemblerConverterResult(encoding, locationCounter, null));
                     this.locationCounter += 1;
-                } 
+                }
             } catch (Exception error) {
                 System.out.println(error.getMessage());
                 this.hasErrors = true;
@@ -235,7 +273,6 @@ public class AssemblerConverter {
                 this.locationCounter += 1;
             }
         }
-        return conversionResult;
     }
 
 }

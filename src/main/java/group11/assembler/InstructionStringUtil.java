@@ -1,5 +1,11 @@
 package group11.assembler;
 
+import java.util.Arrays;
+
+/**
+ * Utility for extracting the different parts of assembler instruction (opcode, args, label)
+ * out of raw string
+ */
 public class InstructionStringUtil {
     public static String extractLabel(String[] instructionParts) {
         if (instructionParts[0].endsWith(":")) {
@@ -16,9 +22,13 @@ public class InstructionStringUtil {
         return op.toUpperCase();
     }
 
-    // validation needed: if arg start index is out of bounds of instructionParts
-    // array
     public static String[] extractArgs(String[] instructionParts, int argStartIndex) {
-        return instructionParts[argStartIndex].trim().split(",");
+        if(instructionParts[argStartIndex].replaceAll("\\s+","").startsWith(";")) {
+            return new String[0];
+        }
+        String [] res = instructionParts[argStartIndex].replaceAll("\\s+","").split(",");
+        System.out.println("res result");
+        System.out.println(Arrays.toString(res));
+        return res;
     }
 }
