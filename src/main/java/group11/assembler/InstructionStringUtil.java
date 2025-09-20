@@ -27,8 +27,6 @@ public class InstructionStringUtil {
             return new String[0];
         }
         String [] res = instructionParts[argStartIndex].replaceAll("\\s+","").split(",");
-        System.out.println("res result");
-        System.out.println(Arrays.toString(res));
         return res;
     }
 }

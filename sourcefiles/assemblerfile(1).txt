@@ -1,0 +1,15 @@
+LOC 0        ; Start at location 0
+DATA 5       ; Memory[0] = 5
+DATA 8       ; Memory[1] = 8
+DATA Sum     ; Memory[2] = label Sum
+DATA 0       ; Memory[3] = 0
+
+LDA 0,0,0    ; Load Memory[0] into R0
+AIR 0,3      ; Add 3 to R0
+STR 0,0,4    ; Store R0 into Memory[4]
+
+LDA 1,0,1    ; Load Memory[1] into R1
+AIR 1,2      ; Add 2 to R1
+STR 1,0,5    ; Store R1 into Memory[5]
+
+Sum: HLT     ; Stop program

@@ -7,6 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -18,7 +19,8 @@ public class Assembler {
   String assemblerFilePath;
 
   /**
-   * Main function that parses labels, converts instructions, and delivers files (if applicable)
+   * Main function that parses labels, converts instructions, and delivers files
+   * (if applicable)
    */
   public void assemble() {
     getFileInputPath();
@@ -68,7 +70,7 @@ public class Assembler {
       } else if (!file.isFile()) {
         System.out.println("Error: Path does not point to a file. Please try again.");
       } else if (!file.getName().toLowerCase().endsWith(".txt")) {
-              System.out.println("Error: Path does not point to a .txt file. Please try again.");
+        System.out.println("Error: Path does not point to a .txt file. Please try again.");
       } else {
         filePathValid = true;
         System.out.println("Valid file found: " + file.getAbsolutePath());
@@ -82,6 +84,7 @@ public class Assembler {
   // https://www.java-success.com/reading-a-text-file-in-java-with-the-scanner/
   /**
    * Reads file in or returns error if file is not found or not correct
+   * 
    * @return File content as string
    */
   private String readInputFile() {
@@ -102,23 +105,26 @@ public class Assembler {
   // https://stackoverflow.com/questions/56004215/writing-to-a-text-file-line-by-line
   /**
    * Outputs listing file
-   * @param conversionResult Map of conversion results (incl. octal representation and errors, if applicable)
-   * @param rawInstructions Raw file input
-   * @param hasErrors Whether conversion process recorded errors in source file
+   * 
+   * @param conversionResult Map of conversion results (incl. octal representation
+   *                         and errors, if applicable)
+   * @param rawInstructions  Raw file input
+   * @param hasErrors        Whether conversion process recorded errors in source
+   *                         file
    */
   private void outputListingFile(HashMap<Integer, AssemblerConverterResult> conversionResult,
       String[] rawInstructions, Boolean hasErrors) {
     int index = 0;
     int maxIndex = rawInstructions.length;
     StringBuilder content = new StringBuilder();
-    try (BufferedWriter writer = new BufferedWriter(new FileWriter("listing-file.txt", true))) {
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter("listing-file.txt", false))) {
       while (index < maxIndex) {
         AssemblerConverterResult entry = conversionResult.get(index);
         if (entry != null) {
           writer.write(entry.getResultInOctal());
-          writer.write( "\t");
+          writer.write("\t");
         } else {
-          writer.write( " ".repeat(13) + "\t");
+          writer.write(" ".repeat(13) + "\t");
         }
         writer.write(rawInstructions[index]);
         if (entry != null && entry.error != null) {
@@ -136,26 +142,30 @@ public class Assembler {
       System.out.println("A critical file error occurred during writing the listing file");
       ex.printStackTrace();
     }
+    Path filePath = Paths.get("listing-file.txt");
+    System.out.println("Listing file written at " + filePath.toAbsolutePath());
   }
 
   // https://www.baeldung.com/java-iterate-map
   /**
    * Outputs load file
-   * @param conversionResult Map of conversion results (incl. octal representation and errors, if applicable)
+   * 
+   * @param conversionResult Map of conversion results (incl. octal representation
+   *                         and errors, if applicable)
    */
   private void outputLoadFile(HashMap<Integer, AssemblerConverterResult> conversionResult) {
     int index = 0;
     StringBuilder content = new StringBuilder();
-    try (BufferedWriter writer = new BufferedWriter(new FileWriter("load-file.txt", true))) {
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter("load-file.txt", false))) {
       for (AssemblerConverterResult value : conversionResult.values()) {
         writer.write(value.getResultInOctal());
         writer.newLine();
       }
-
     } catch (IOException ex) {
       System.out.println("A critical file error occurred during writing the load file");
       ex.printStackTrace();
-
     }
+    Path filePath = Paths.get("load-file.txt");
+    System.out.println("Load file written at " + filePath.toAbsolutePath());
   }
 }

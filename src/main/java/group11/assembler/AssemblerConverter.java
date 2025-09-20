@@ -267,7 +267,6 @@ public class AssemblerConverter {
                     this.locationCounter += 1;
                 }
             } catch (Exception error) {
-                System.out.println(error.getMessage());
                 this.hasErrors = true;
                 conversionResult.put(i, new AssemblerConverterResult(-1, locationCounter, error.getMessage()));
                 this.locationCounter += 1;
