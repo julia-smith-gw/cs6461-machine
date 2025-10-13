@@ -1,0 +1,19 @@
+
+                LOC 0        ; Start at location 0\
+000000 000005	DATA 5       ; Memory[0] = 5\
+000001 000010	DATA 8       ; Memory[1] = 8\
+000002 000012	DATA Sum     ; Memory[2] = label Sum\
+000003 000000	DATA 0       ; Memory[3] = 0\
+             	\
+000004 006000	LDA 0,0,0    ; Load Memory[0] into R0\
+000005 014003	AIR 0,3      ; Add 3 to R0\
+000006 004004	STR 0,0,4    ; Store R0 into Memory[4]\
+             	\
+000007 006401	LDA 1,0,1    ; Load Memory[1] into R1\
+000010 014402	AIR 1,2      ; Add 2 to R1\
+000011 004405	STR 1,0,5    ; Store R1 into Memory[5]\
+             	\
+000012 000000	Sum: HLT     ; Stop program\
+\
+** NO ERRORS FOUND DURING ASSEMBLY. LOAD FILE PRODUCED **             	\
+}

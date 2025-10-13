@@ -1,10 +1,10 @@
 //written with GPT assistance 
-package group11.assembler;
+package group11.core;
 
 public class Memory 
 {
 
-    private final int MEMORY_SIZE = 2048;    
+    public final int MEMORY_SIZE = 2048;    
     private int[] memory;                     
     private int MAR;                          
     private int MBR;      // should we declare MAR and MBR in CPU.java?

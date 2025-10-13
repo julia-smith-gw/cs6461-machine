@@ -1,24 +1,27 @@
-package group11.assembler;
+package group11.core;
+
+import java.io.File;
 
 //call using the below in gui 
 //CPU cpu = new CPU(memory);
 //cpu.run();
 public class CPU {
-    private int[] GPR = new int[4];    // R0-R3
-    private int[] IXR = new int[4];    // X1-X3
-    private int PC;                    // Program Counter
-    private int IR;                    // Instruction Register
-    private int MAR;                   // CPU copy of MAR
-    private int MBR;                   // CPU copy of MBR
+    public int[] GPR = new int[4];    // R0-R3
+    public int[] IXR = new int[4];    // X1-X3
+    public int PC;                    // Program Counter
+    public int IR;                    // Instruction Register
+    public int MAR;                   // CPU copy of MAR
+    public int MBR;                   // CPU copy of MBR
+    public File selectedFile;          // loaded program file (if applicable)
 
-    private boolean running = false;
-    private Memory memory;
+    public boolean running = false;
+    public Memory memory;
 
-    private int address; 
-    private int R;       
-    private int IX;      
-    private int I;       
-    private int opcode; 
+   public int address; 
+    public int R;       
+    public int IX;      
+    public int I;       
+    public int opcode; 
 
     public CPU(Memory memory) {
         this.memory = memory;
@@ -34,13 +37,12 @@ public class CPU {
         PC++;
     }
 
-
-    private void executeLOAD() {
+    public void load() {
         memory.readMemory(address);
         GPR[R] = memory.readMBR();;
     }
 
-    private void executeSTORE() {
+    public void store() {
         int reg = (IR >> 8) & 0x03;
         int addr = IR & 0xFF;
 
@@ -80,7 +82,6 @@ public class CPU {
         }
     }
 
-
     private void decodeAndExecute() {
         opcode = (IR >> 10) & 0x3F; // Top 6 bits
         R = (IR >> 8) & 0x03;       // Next 2 bits
@@ -95,13 +96,13 @@ public class CPU {
             address = memory.readMBR();  // M[EA] contains pointer to actual location
         }
         switch (opcode) {
-            case 1 -> executeLOAD();   
-            case 2 -> executeSTORE();
+            case 1 -> load();   
+            case 2 -> store();
             case 0 -> halt();
             default -> System.out.println("Unknown opcode: " + opcode);
         }
     }
-    private void halt() {
+    public void halt() {
         running = false;
         //System.out.println("HALT executed.");
     }
