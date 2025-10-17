@@ -45,6 +45,10 @@ public class RomLoader {
                     throw new LoadException(lineNo, "Address out of range: " + parts[0] + " (octal)");
                 }
 
+                System.out.println("WRITE TO MEMORY");
+                System.out.println(addr);
+                System.out.println(word & 0xFFFF);
+                
                 memory.writeMemory(addr, word & 0xFFFF); // mask to 16 bits if desired
             }
         }

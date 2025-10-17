@@ -5,9 +5,9 @@ public class Memory
 {
 
     public final int MEMORY_SIZE = 2048;    
-    private int[] memory;                     
-    private int MAR;                          
-    private int MBR;      // should we declare MAR and MBR in CPU.java?
+    public int[] memory;                     
+    public int MAR;                          
+    public int MBR;      // should we declare MAR and MBR in CPU.java?
 
     public Memory() 
     {

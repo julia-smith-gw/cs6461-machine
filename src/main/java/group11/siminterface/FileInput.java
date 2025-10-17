@@ -84,7 +84,7 @@ public class FileInput extends JPanel {
      * Returns the Path of the selected file, or empty string if none chosen.
      */
     public Path getSelectedPath() {
-        return Paths.get(filePathField.toString());
+        return Paths.get(filePathField.getText().toString());
     }
 
 

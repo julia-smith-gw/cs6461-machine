@@ -19,14 +19,31 @@ import javax.swing.text.Document;
 import javax.swing.text.DocumentFilter;
 import java.util.Optional;
 
+// Step 1: Define a functional interface
+@FunctionalInterface
+interface Action {
+    void run();
+}
+
 // https://chatgpt.com/share/68ec33a9-a518-8007-ac90-d03566374f14
 public class OctalInputWithButton {
     String label;
     Boolean hasActionButton;
+    Action action;
+    OctalTextField field;
 
-    OctalInputWithButton(String label, Boolean hasActionButton) {
+    OctalInputWithButton(String label, Boolean hasActionButton, Action action) {
         this.label = label;
         this.hasActionButton = hasActionButton;
+        this.action = action;
+    }
+
+    public Integer getValue(){
+       return field.getValue();
+    }
+
+    public void setFromOctal(int newValue){
+        this.field.setFromOctal(newValue);
     }
 
     public JComponent buildInput() {
@@ -41,6 +58,7 @@ public class OctalInputWithButton {
         left.setLayout(new BoxLayout(left, BoxLayout.X_AXIS));
 
         OctalTextField field = new OctalTextField(10);
+        this.field = field;
         JLabel label = new JLabel(this.label);
 
         left.add(label);
@@ -53,15 +71,20 @@ public class OctalInputWithButton {
 
             // Button action: parse octal -> decimal, set on Data
             apply.addActionListener((ActionEvent e) -> {
-                Integer val = field.getOctalAsDecimal(); // null if empty/invalid
-                if (val == null) {
-                    JOptionPane.showMessageDialog(row, "Enter a valid octal number (0–7).",
-                            "Invalid", JOptionPane.WARNING_MESSAGE);
-                } else {
+                // Integer val = field.getOctalAsDecimal(); // null if empty/invalid
+                // if (val == null) {
+                //     JOptionPane.showMessageDialog(row, "Enter a valid octal number (0–7).",
+                //             "Invalid", JOptionPane.WARNING_MESSAGE);
+                // } else {
                     // set in CPU
+                    // if (e == null) {
+                    // JOptionPane.showMessageDialog(row, "Enter a valid octal number (0–7).",
+                    //         "Invalid", JOptionPane.WARNING_MESSAGE);
+                    // }
+                    this.action.run();
                     // Data.setValue(val); // <- set in the other class
-                    JOptionPane.showMessageDialog(row, "Set Data.value = " + val + " (decimal).");
-                }
+                    //JOptionPane.showMessageDialog(row, "Set Data.value = " + val + " (decimal).");
+                //}
             });
 
             // Pressing Enter in the field triggers the button
@@ -79,7 +102,7 @@ public class OctalInputWithButton {
      * JTextField that accepts only octal digits (0–7) and can convert to decimal.
      */
     static class OctalTextField extends JTextField {
-        private static final String OCTAL_PATTERN = "^[0-7]*$";
+    private static final String OCTAL_PATTERN = "^[0-7]*$";
 
         OctalTextField(int columns) {
             super(columns);
@@ -97,6 +120,24 @@ public class OctalInputWithButton {
             } catch (NumberFormatException ex) {
                 return null;
             }
+        }
+
+        public Integer getValue(){
+            String s = getText().trim();
+            if (s.isEmpty())
+                return null;
+            try {
+                return Integer.parseInt(s, 8);
+            } catch (NumberFormatException ex) {
+                return null;
+            }
+        }
+
+        /**Helper to set from octal */
+        void setFromOctal(int octal) {
+               if (octal < 0)
+                throw new IllegalArgumentException("Only non-negative values supported");
+            setText(String.format("%06o", octal));
         }
 
         /** Optional helper to set from a decimal int, rendering as octal. */
