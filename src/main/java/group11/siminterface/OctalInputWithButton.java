@@ -19,7 +19,6 @@ import javax.swing.text.Document;
 import javax.swing.text.DocumentFilter;
 import java.util.Optional;
 
-// Step 1: Define a functional interface
 @FunctionalInterface
 interface Action {
     void run();
@@ -46,6 +45,10 @@ public class OctalInputWithButton {
         this.field.setFromOctal(newValue);
     }
 
+    /**
+     * Initialize input field on Swing interface with labels and return
+     * @return JComponent representing combo text field with button
+     */
     public JComponent buildInput() {
         JPanel root = new JPanel(new BorderLayout());
         root.setBorder(new EmptyBorder(3, 12, 3, 12));
@@ -71,20 +74,7 @@ public class OctalInputWithButton {
 
             // Button action: parse octal -> decimal, set on Data
             apply.addActionListener((ActionEvent e) -> {
-                // Integer val = field.getOctalAsDecimal(); // null if empty/invalid
-                // if (val == null) {
-                //     JOptionPane.showMessageDialog(row, "Enter a valid octal number (0–7).",
-                //             "Invalid", JOptionPane.WARNING_MESSAGE);
-                // } else {
-                    // set in CPU
-                    // if (e == null) {
-                    // JOptionPane.showMessageDialog(row, "Enter a valid octal number (0–7).",
-                    //         "Invalid", JOptionPane.WARNING_MESSAGE);
-                    // }
                     this.action.run();
-                    // Data.setValue(val); // <- set in the other class
-                    //JOptionPane.showMessageDialog(row, "Set Data.value = " + val + " (decimal).");
-                //}
             });
 
             // Pressing Enter in the field triggers the button
@@ -99,7 +89,7 @@ public class OctalInputWithButton {
     }
 
     /**
-     * JTextField that accepts only octal digits (0–7) and can convert to decimal.
+     * Filtered JTextField that accepts only octal digits (0–7)
      */
     static class OctalTextField extends JTextField {
     private static final String OCTAL_PATTERN = "^[0-7]*$";
@@ -110,18 +100,10 @@ public class OctalInputWithButton {
             setToolTipText("Enter an octal number (digits 0–7).");
         }
 
-        /** Returns decimal value parsed from the octal text; null if empty/invalid. */
-        Integer getOctalAsDecimal() {
-            String s = getText().trim();
-            if (s.isEmpty())
-                return null;
-            try {
-                return Integer.parseInt(s, 8);
-            } catch (NumberFormatException ex) {
-                return null;
-            }
-        }
-
+        /**
+         * Gets text value in input as integer
+         * @return integer value of input
+         */
         public Integer getValue(){
             String s = getText().trim();
             if (s.isEmpty())
@@ -133,18 +115,11 @@ public class OctalInputWithButton {
             }
         }
 
-        /**Helper to set from octal */
+        /**Helper to set from octal int value */
         void setFromOctal(int octal) {
                if (octal < 0)
                 throw new IllegalArgumentException("Only non-negative values supported");
             setText(String.format("%06o", octal));
-        }
-
-        /** Optional helper to set from a decimal int, rendering as octal. */
-        void setFromDecimal(int decimal) {
-            if (decimal < 0)
-                throw new IllegalArgumentException("Only non-negative values supported");
-            setText(Integer.toOctalString(decimal));
         }
 
         /** Filter that allows only 0–7, paste-safe. */

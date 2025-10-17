@@ -19,11 +19,12 @@ public class App
         Memory memory = new Memory();
         EventBus eventBus = new EventBus();
         RomLoader romLoader = new RomLoader(memory);
-        CPU cpu = new CPU(memory, eventBus);
+        CPU cpu = new CPU(memory, eventBus, romLoader);
+  
             SwingUtilities.invokeLater(() -> {
             JFrame f = new JFrame("Group 11 Computer Simulator");
             f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            f.setContentPane(new MainPanel(eventBus).initializeInterface(romLoader, cpu));
+            f.setContentPane(new MainPanel(eventBus).initializeInterface(cpu));
             f.pack();
             f.setLocationByPlatform(true);
             f.setVisible(true);

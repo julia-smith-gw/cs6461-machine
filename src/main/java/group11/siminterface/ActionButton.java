@@ -3,8 +3,9 @@ package group11.siminterface;
 import javax.swing.*;
 import java.awt.event.ActionListener;
 
+// https://chatgpt.com/share/68ec33a9-a518-8007-ac90-d03566374f14
 /**
- * A reusable Swing button that performs a custom action when clicked.
+ * A button that performs a custom action when clicked.
  */
 public class ActionButton extends JButton {
 

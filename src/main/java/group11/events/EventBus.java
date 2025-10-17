@@ -10,26 +10,20 @@ import group11.siminterface.MainPanel;
 
 //https://chatgpt.com/share/68f265e2-9bc0-8007-a9ad-966b559bf088
 
-// UI -> Model (intents/commands)
-// sealed interface UiCommand permits SetGPR, SetIXR, SetPC, SetMAR, SetMBR {}
-// record SetGPR(int GPRNum, int value) implements UiCommand {};
-// record SetIXR(int IXRNum, int value) implements UiCommand {};
-// record SetMAR(int value) implements UiCommand {};
-// record SetMBR(int value) implements UiCommand {};
-// record SetPC(int value) implements UiCommand {};
-
-// // Model -> UI (state changes)
-
-// record GPRChanged(int GPRNum, int value) implements CPUEvent {}
-// record IXRChanged(int IXRNum, int value) implements CPUEvent {}
-// record PCChanged(int value) implements CPUEvent {}
-// record MARChanged(int value) implements CPUEvent {}
-// record MBRChanged(int value) implements CPUEvent {}
-// record IRChanged(int value) implements CPUEvent {}
-
+/**
+ * This event bus utilizes Java's AutoCloseable listeners to convey value changes between the CPU values
+ * and the frontend, binding them to each other.
+ */
 public final class EventBus {
     private final Map<Class<?>, CopyOnWriteArrayList<Consumer<?>>> listeners = new ConcurrentHashMap<>();
 
+    /**
+     * Subscribe to command (see events folder for all possible commands).
+     * @param <T> Desired event grouping interface
+     * @param type Desired event to subscribe to
+     * @param handler Callback to invoke when change occurs
+     * @return Instance of new autocloseable subscription 
+     */
     public <T> AutoCloseable subscribe(Class<T> type, Consumer<T> handler) {
         var list = listeners.computeIfAbsent(type, k -> new CopyOnWriteArrayList<>());
         list.add(handler);
@@ -40,6 +34,10 @@ public final class EventBus {
         };
     }
 
+    /**
+     * Posts new value change to subscribers
+     * @param event A new event instance with arguments. See 'CPUEvent' or 'UiCommand' for all events.
+     */
     public void post(Object event) {
         Objects.requireNonNull(event, "event");
         // Notify exact class listeners

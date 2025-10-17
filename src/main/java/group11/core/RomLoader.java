@@ -6,11 +6,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 //https://chatgpt.com/share/68ec33a9-a518-8007-ac90-d03566374f14
+/*
+ * ROM loader that places octal input instructions into memory
+ */
 public class RomLoader {
 
     Memory memory;
     public RomLoader(Memory memory) {
-        this.memory=memory;
+        this.memory=memory; 
     }
 
     /**
@@ -21,10 +24,11 @@ public class RomLoader {
      * @throws IOException   on I/O errors
      * @throws LoadException on format or address errors
      */
-    public void load(Path path) throws IOException, LoadException {
+    public int load(Path path) throws IOException, LoadException {
         try (BufferedReader br = Files.newBufferedReader(path)) {
             String line;
             int lineNo = 0;
+            int pendingInstructions=0;
 
             while ((line = br.readLine()) != null) {
                 lineNo++;
@@ -44,13 +48,13 @@ public class RomLoader {
                 if (addr < 0 || addr >= memory.MEMORY_SIZE) {
                     throw new LoadException(lineNo, "Address out of range: " + parts[0] + " (octal)");
                 }
-
-                System.out.println("WRITE TO MEMORY");
-                System.out.println(addr);
-                System.out.println(word & 0xFFFF);
-                
+               
+                pendingInstructions++;
                 memory.writeMemory(addr, word & 0xFFFF); // mask to 16 bits if desired
             }
+
+            // count of pending instructions for cpu accounting
+             return pendingInstructions;
         }
     }
 

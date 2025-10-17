@@ -7,6 +7,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+ // https://chatgpt.com/share/68ec33a9-a518-8007-ac90-d03566374f14
 /**
  * A reusable Swing component that lets the user select a file from the filesystem.
  * 
@@ -66,32 +67,10 @@ public class FileInput extends JPanel {
     }
 
     /**
-     * Returns the currently selected File, or null if none chosen.
-     */
-    public File getSelectedFile() {
-        return selectedFile;
-    }
-
-    /**
-     * Sets the selected file programmatically and updates the text field.
-     */
-    public void setSelectedFile(File file) {
-        this.selectedFile = file;
-        filePathField.setText(file != null ? file.getAbsolutePath() : "");
-    }
-
-    /**
      * Returns the Path of the selected file, or empty string if none chosen.
      */
     public Path getSelectedPath() {
         return Paths.get(filePathField.getText().toString());
     }
 
-
-    /**
-     * Returns the path string of the selected file, or empty string if none chosen.
-     */
-    public String getSelectedPathAsString() {
-        return filePathField.getText();
-    }
 }
