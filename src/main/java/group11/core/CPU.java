@@ -1,6 +1,5 @@
 package group11.core;
 
-import java.io.File;
 import java.io.IOException;
 
 import group11.core.RomLoader.LoadException;
@@ -20,7 +19,7 @@ import group11.events.SetPC;
 import javax.swing.Timer;
 import java.nio.file.Path;
 
-//call using the below in gui 
+// assisted by chatgpt
 public class CPU implements AutoCloseable {
 
     // event bus and subscriptions
@@ -136,9 +135,9 @@ public class CPU implements AutoCloseable {
      * instructions one at a time
      */
     public void step() {
-        this.bus.post(new MessageChanged("Executing instruction " + completedInstructions +
-                " out of " + this.pendingInstructions + ". " +
-                ", PC: " + this.PC));
+        int instrCount = completedInstructions + 1;
+        this.bus.post(new MessageChanged("Executing instruction " + instrCount + ". "
+                + "PC: " + this.PC));
         fetch();
         decodeAndExecute();
         this.completedInstructions++;
@@ -204,27 +203,28 @@ public class CPU implements AutoCloseable {
      * Op code STX. Stores index register value into memory.
      */
     public void storeIndexRegister() {
-        int reg = (IR >> 8) & 0x03;
-        int addr = IR & 0xFF;
-        memory.writeMemory(addr, IXR[reg]);
+        memory.writeMemory(effectiveAddress, this.IX);
     }
 
     /**
      * Gets if effective address is valid
      * 
-     * @param ignoreReserved Whether we should ignore reserved memory addresses for
-     *                       validation (user can mess with reserved memory outside
-     *                       of run).
+     * @param ignoreReserved          Whether we should ignore reserved memory
+     *                                addresses for
+     *                                validation (user can mess with reserved memory
+     *                                outside
+     *                                of run).
+     * @param pendingEffectiveAddress address to check
      * @return true if valid or throws an error if not
      */
-    private boolean getIsValidAddress(Boolean ignoreReserved) {
-        if (effectiveAddress > this.memory.MEMORY_SIZE
-                || effectiveAddress < 0) {
+    private boolean getIsValidAddress(Boolean ignoreReserved, int pendingEffectiveAddress) {
+        if (pendingEffectiveAddress >= this.memory.MEMORY_SIZE
+                || pendingEffectiveAddress < 0) {
             throw new IllegalArgumentException("Memory out of bounds access");
         }
-        if (!!ignoreReserved && (effectiveAddress >= 0 && effectiveAddress <= 5)) {
+        if (!!ignoreReserved && (pendingEffectiveAddress >= 0 && pendingEffectiveAddress <= 5)) {
             throw new IllegalArgumentException(
-                    "Illegal memory register access at effective address " + effectiveAddress);
+                    "Illegal memory register access at effective address " + pendingEffectiveAddress);
         }
         return true;
     }
@@ -238,21 +238,31 @@ public class CPU implements AutoCloseable {
      */
     private void setEffectiveAddress(int opcode) {
         int pendingEffectiveAddress = 0;
-        int r = (IR >> 8) & 0x03; // Next 2 bits
-        int ix = (IR >> 6) & 0x03; // Next 2 bits
-        int i = (IR >> 5) & 0x01; // Next 1 bit
-        pendingEffectiveAddress = IR & 0x1F; // Last 5 bits
+        int ix = (IR >> 8) & 0x03; // [9..8] IX (2 bits)
+        int r = (IR >> 6) & 0x03; // [7..6] R (2 bits)
+        int i = (IR >> 5) & 0x01; // [5] I
+        pendingEffectiveAddress = IR & 0x1F;
         if (ix != 0) {
-            pendingEffectiveAddress += IXR[ix]; // Add index register if used
+            if (ix < 1 || ix > 3) {
+                throw new IllegalArgumentException("Bad index register in instruction");
+            }
+            pendingEffectiveAddress += IXR[ix];
         }
 
         if (i == 1) {
-            memory.readMemory(pendingEffectiveAddress);
-            pendingEffectiveAddress = memory.readMBR(); // M[EA] contains pointer to actual location
+            // check bounds before reading
+            try {
+                getIsValidAddress(running, pendingEffectiveAddress);
+                memory.readMemory(pendingEffectiveAddress);
+                pendingEffectiveAddress = memory.readMBR();
+            } catch (Exception e) {
+                throw e;
+            }
         }
-
+        
+        // check returned address if indirect or if calculated based on index register above
         try {
-            boolean isValidAddress = getIsValidAddress(running);
+            getIsValidAddress(running, pendingEffectiveAddress);
         } catch (Exception e) {
             throw e;
         }
@@ -272,6 +282,7 @@ public class CPU implements AutoCloseable {
             halt();
         } else {
             opcode = (IR >> 10) & 0x3F; // Top 6 bits
+
             switch (opcode) {
                 case 01: {
                     try {
@@ -339,7 +350,6 @@ public class CPU implements AutoCloseable {
      */
     public void halt() {
         running = false;
-        this.bus.post(new MessageChanged("Program halted."));
     }
 
     // https://stackoverflow.com/questions/28432164/java-swing-timer-loop
@@ -350,15 +360,15 @@ public class CPU implements AutoCloseable {
         running = true;
         completedInstructions = 0;
 
-        // we apply timer of 2000 seconds here to allow user to properly see interface update.
+        // we apply timer of 2000 seconds here to allow user to properly see interface
+        // update.
         Timer cpuTick = new Timer(2000, e -> {
+  
+            step();
             if (!running || pendingInstructions == completedInstructions) {
-                this.bus.post(new MessageChanged(
-                        "All instructions complete. Please reset PC, hit IPL, and hit Run to run again."));
                 ((javax.swing.Timer) e.getSource()).stop();
                 return;
             }
-            step(); 
         });
         cpuTick.setInitialDelay(0);
         cpuTick.start();
@@ -366,6 +376,7 @@ public class CPU implements AutoCloseable {
 
     /**
      * Loads set of instructions from load file
+     * 
      * @param selectedPath String of selected file path to load.
      */
     public void loadFromROM(Path selectedPath) {

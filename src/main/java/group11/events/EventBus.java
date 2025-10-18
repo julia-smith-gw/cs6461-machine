@@ -6,7 +6,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
-import group11.siminterface.MainPanel;
 
 //https://chatgpt.com/share/68f265e2-9bc0-8007-a9ad-966b559bf088
 
@@ -25,7 +24,7 @@ public final class EventBus {
      * @return Instance of new autocloseable subscription 
      */
     public <T> AutoCloseable subscribe(Class<T> type, Consumer<T> handler) {
-        var list = listeners.computeIfAbsent(type, k -> new CopyOnWriteArrayList<>());
+        var list = listeners.computeIfAbsent(type, _ -> new CopyOnWriteArrayList<>());
         list.add(handler);
         // Return an AutoCloseable so you can easily unsubscribe (avoid leaks).
         return () -> {

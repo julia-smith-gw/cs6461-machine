@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
  // https://chatgpt.com/share/68ec33a9-a518-8007-ac90-d03566374f14
+ // https://chatgpt.com/share/68f3eb7a-ea8c-8007-a3f8-b1635d62b988
 /**
  * A reusable Swing component that lets the user select a file from the filesystem.
  * 
@@ -16,24 +17,19 @@ import java.nio.file.Paths;
 public class FileInput extends JPanel {
     private final JTextField filePathField;
     private final JButton browseButton;
-    private File selectedFile;
-
-    /**
-     * Constructs a FileInput with a default label "Browse".
-     */
-    public FileInput() {
-        this("Browse...");
-    }
 
     /**
      * Constructs a FileInput with a custom button label.
      *
      * @param buttonLabel text to display on the browse button
      */
-    public FileInput(String buttonLabel) {
+    public FileInput(String buttonLabel, File inputFile) {
+      
+
         super(new BorderLayout(8, 0)); // 8px horizontal gap
         setBorder(new EmptyBorder(4, 4, 4, 4));
 
+        
         JLabel label = new JLabel("Program File");
 
   
@@ -42,10 +38,13 @@ public class FileInput extends JPanel {
         browseButton = new JButton(buttonLabel);
 
         // Choose file on click
-        browseButton.addActionListener(e -> chooseFile());
+        browseButton.addActionListener(_ -> chooseFile());
         add(label, BorderLayout.WEST);
         add(filePathField, BorderLayout.CENTER);
         add(browseButton, BorderLayout.EAST);
+           if (inputFile!= null) {
+            filePathField.setText(inputFile.getAbsolutePath());
+        }
     }
 
     /**
@@ -55,14 +54,12 @@ public class FileInput extends JPanel {
         JFileChooser chooser = new JFileChooser();
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 
-        if (selectedFile != null) {
-            chooser.setCurrentDirectory(selectedFile.getParentFile());
+         if (!filePathField.getText().isEmpty()) {
+            chooser.setSelectedFile(new File(filePathField.getText()));
         }
-
         int result = chooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
-            selectedFile = chooser.getSelectedFile();
-            filePathField.setText(selectedFile.getAbsolutePath());
+            filePathField.setText(chooser.getSelectedFile().getAbsolutePath());
         }
     }
 

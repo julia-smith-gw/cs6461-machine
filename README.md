@@ -11,12 +11,15 @@ Java 24 (JDK) installed on machine. See instructions here: https://www.oracle.co
  java -jar computer-simulator-1.0-SNAPSHOT.jar
  ```
 4. When the terminal prompts you for a path to an assembler source file, enter the path. You may need to use an absolute path to the assembler source file.
-5. Sim to your heart's content :). Test files with test output are located in /sourcefiles.
+5. Sim to your heart's content :). Test files with test output are located in /sourcefiles of the codebase.
 
 ## USING SIMULATOR INTERFACE ##
-The simulator interface looks like this. From left to right on the top, we see we have GPR inputs (general purpose registers), IXR inputs (index registers), the PC (program counter), 
+The simulator interface looks much like the one on the ISA document. From left to right on the top, we see we have GPR inputs (general purpose registers), IXR inputs (index registers), the PC (program counter), 
 MAR (the memory address register), MBR (memory buffer register), and IR (instruction register). In the middle, we see we have octal input (our main input field), as well as some control buttons (explained more below). Finally, the bottom section is occupied by a textArea that displays error or execution messages if applicable.
 ![simulator](image.png)
+
+### TEST FILE ###
+The simulator comes pre-loaded with a nominal test file that includes all supported load/store instructions to demonstrate. This file starts from PC counter 100 (octal 000144). Make sure to enter this PC if you use this nominal test file.
 
 ### PROVIDING INPUTS ###
 All fields with an 'Apply' button next to them can have their value set via the Octal Value input. Enter your desired value in six-digit octal in the Octal Vaue input and click 'Apply' next to the desired field to change it.
@@ -46,6 +49,17 @@ The store+ functions like the 'store' button, but it increments the MAR by 1 aft
 
 ### HALT ###
 This button halts the execution of any running program.
+
+### NOTE ###
+Until we have jump instructions, it is expected that the next instructions in a program will have contiguous addresses. Please set PC to the location of your first non-data instruction.
+
+
+
+
+
+
+
+
 
 
 

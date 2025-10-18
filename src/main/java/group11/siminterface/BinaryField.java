@@ -1,26 +1,16 @@
 package group11.siminterface;
 
 import java.awt.BorderLayout;
-import java.awt.event.ActionEvent;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.text.AbstractDocument;
-import javax.swing.text.AttributeSet;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Document;
-import javax.swing.text.DocumentFilter;
-import java.util.Optional;
-
 import group11.siminterface.OctalInputWithButton.OctalTextField;
 
 // Document listener info from https://chatgpt.com/share/68f2be28-3990-8007-816f-739b9df814e1
@@ -91,6 +81,7 @@ public class BinaryField {
 
         OctalTextField field = new OctalTextField(10);
         this.field = field;
+        field.setEditable(false);
         JLabel label = new JLabel("Binary Octal ");
 
         left.add(label);

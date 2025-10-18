@@ -23,7 +23,7 @@ public class ActionButton extends JButton {
         }
 
         // Wrap the Runnable in an ActionListener
-        addActionListener(e -> action.run());
+        addActionListener(_ -> action.run());
     }
 
     /**

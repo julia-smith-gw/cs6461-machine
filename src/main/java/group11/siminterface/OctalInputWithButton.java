@@ -8,7 +8,6 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
@@ -17,7 +16,6 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.DocumentFilter;
-import java.util.Optional;
 
 @FunctionalInterface
 interface Action {
@@ -30,11 +28,13 @@ public class OctalInputWithButton {
     Boolean hasActionButton;
     Action action;
     OctalTextField field;
+    Boolean editable;
 
-    OctalInputWithButton(String label, Boolean hasActionButton, Action action) {
+    OctalInputWithButton(String label, Boolean hasActionButton, Boolean editable, Action action) {
         this.label = label;
         this.hasActionButton = hasActionButton;
         this.action = action;
+        this.editable=editable;
     }
 
     public Integer getValue(){
@@ -62,6 +62,7 @@ public class OctalInputWithButton {
 
         OctalTextField field = new OctalTextField(10);
         this.field = field;
+        this.field.setEditable(this.editable);
         JLabel label = new JLabel(this.label);
 
         left.add(label);
@@ -73,12 +74,12 @@ public class OctalInputWithButton {
             JButton apply = new JButton("Apply");
 
             // Button action: parse octal -> decimal, set on Data
-            apply.addActionListener((ActionEvent e) -> {
+            apply.addActionListener((ActionEvent _) -> {
                     this.action.run();
             });
 
             // Pressing Enter in the field triggers the button
-            field.addActionListener(e -> apply.doClick());
+            field.addActionListener(_ -> apply.doClick());
             row.add(apply, BorderLayout.EAST);
         }
 
@@ -106,8 +107,10 @@ public class OctalInputWithButton {
          */
         public Integer getValue(){
             String s = getText().trim();
-            if (s.isEmpty())
+            if (s.isEmpty()){
                 return null;
+            }
+        
             try {
                 return Integer.parseInt(s, 8);
             } catch (NumberFormatException ex) {

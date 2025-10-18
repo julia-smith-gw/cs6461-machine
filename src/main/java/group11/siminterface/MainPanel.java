@@ -2,10 +2,7 @@ package group11.siminterface;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.text.*;
 import group11.core.CPU;
-import group11.core.RomLoader;
-import group11.core.RomLoader.LoadException;
 import group11.events.EventBus;
 import group11.events.GPRChanged;
 import group11.events.IRChanged;
@@ -19,12 +16,9 @@ import group11.events.SetIXR;
 import group11.events.SetMAR;
 import group11.events.SetMBR;
 import group11.events.SetPC;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
+import java.nio.file.Path;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.io.IOException;
 
 // https://chatgpt.com/share/68ec33a9-a518-8007-ac90-d03566374f14
 
@@ -88,7 +82,7 @@ public class MainPanel implements AutoCloseable {
                 case 2:
                     this.IXR2Field.setFromOctal(cmd.value());
                     break;
-                case 4:
+                case 3:
                     this.IXR3Field.setFromOctal(cmd.value());
                     break;
                 default:
@@ -117,7 +111,7 @@ public class MainPanel implements AutoCloseable {
      * @param cpu Instance of cpu
      * @return Jpanel root interface box containing all input sections
      */
-    public JPanel initializeInterface( CPU cpu) {
+    public JPanel initializeInterface( CPU cpu, Path defaultFilePath) {
 
         // panels defining rows for layout
         JPanel root = new JPanel();
@@ -136,25 +130,25 @@ public class MainPanel implements AutoCloseable {
         GPRInputs.setBorder(new EmptyBorder(12, 12, 12, 12));
         GPRInputs.setLayout(new BoxLayout(GPRInputs, BoxLayout.Y_AXIS));
         GPRInputs.add(new JLabel("GPR"));
-        this.GPR0Field = new OctalInputWithButton("GPR 0", true, () -> {
+        this.GPR0Field = new OctalInputWithButton("GPR 0", true, false, () -> {
         this.setFieldFromOctal(this.GPR0Field);
          this.bus.post(new SetGPR(0, this.GPR0Field.getValue()));
         });
         GPRInputs.add(GPR0Field.buildInput());
         GPRInputs.add(Box.createVerticalStrut(2)); // spacing
-        this.GPR1Field = new OctalInputWithButton("GPR 1", true, () -> {
+        this.GPR1Field = new OctalInputWithButton("GPR 1", true, false,() -> {
             this.setFieldFromOctal(this.GPR1Field);
              this.bus.post(new SetGPR(1, this.GPR1Field.getValue()));
         });
         GPRInputs.add(GPR1Field.buildInput());
         GPRInputs.add(Box.createVerticalStrut(2));
-        this.GPR2Field = new OctalInputWithButton("GPR 2", true, () -> {
+        this.GPR2Field = new OctalInputWithButton("GPR 2", true,false, () -> {
             this.setFieldFromOctal(this.GPR2Field);
              this.bus.post(new SetGPR(2, this.GPR2Field.getValue()));
         });
         GPRInputs.add(GPR2Field.buildInput());
         GPRInputs.add(Box.createVerticalStrut(2));
-        this.GPR3Field = new OctalInputWithButton("GPR 3", true, () -> {
+        this.GPR3Field = new OctalInputWithButton("GPR 3", true, false, () -> {
             this.setFieldFromOctal(this.GPR3Field);
             this.bus.post(new SetGPR(3, this.GPR3Field.getValue()));
         });
@@ -167,19 +161,19 @@ public class MainPanel implements AutoCloseable {
         IXRInputs.setBorder(new EmptyBorder(12, 12, 12, 12));
         IXRInputs.setLayout(new BoxLayout(IXRInputs, BoxLayout.Y_AXIS));
         IXRInputs.add(new JLabel("IXR"));
-        this.IXR1Field = new OctalInputWithButton("IXR 1", true, () -> {
+        this.IXR1Field = new OctalInputWithButton("IXR 1", true, false, () -> {
             this.setFieldFromOctal(this.IXR1Field);
             this.bus.post(new SetIXR(1, this.IXR1Field.getValue()));
         });
         IXRInputs.add(this.IXR1Field.buildInput());
         IXRInputs.add(Box.createVerticalStrut(2));
-        this.IXR2Field = new OctalInputWithButton("IXR 2", true, () -> {
+        this.IXR2Field = new OctalInputWithButton("IXR 2", true,false, () -> {
             this.setFieldFromOctal(this.IXR2Field);
               this.bus.post(new SetIXR(2, this.IXR2Field.getValue()));
         });
         IXRInputs.add(IXR2Field.buildInput());
         IXRInputs.add(Box.createVerticalStrut(2));
-        this.IXR3Field = new OctalInputWithButton("IXR 3", true, () -> {
+        this.IXR3Field = new OctalInputWithButton("IXR 3", true, false, () -> {
             this.setFieldFromOctal(this.IXR3Field);
             this.bus.post(new SetIXR(3, this.IXR3Field.getValue()));
         });
@@ -192,26 +186,25 @@ public class MainPanel implements AutoCloseable {
         JPanel programInputs = new JPanel();
         programInputs.setBorder(new EmptyBorder(12, 12, 12, 12));
         programInputs.setLayout(new BoxLayout(programInputs, BoxLayout.Y_AXIS));
-        this.PCField = new OctalInputWithButton("PC", true, () -> {
-            System.out.println("PRESS CHANGE PC BUTTON");
+        this.PCField = new OctalInputWithButton("PC", true, false, () -> {
             this.setFieldFromOctal(this.PCField);
             this.bus.post(new SetPC(this.PCField.getValue()));
         });
         programInputs.add(this.PCField.buildInput());
         programInputs.add(Box.createVerticalStrut(2));
-        this.MARField = new OctalInputWithButton("MAR", true, () -> {
+        this.MARField = new OctalInputWithButton("MAR", true, false, () -> {
             this.setFieldFromOctal(this.MARField);
             this.bus.post(new SetMAR(this.MARField.getValue()));
         });
         programInputs.add(this.MARField.buildInput());
         programInputs.add(Box.createVerticalStrut(2));
-        this.MBRField = new OctalInputWithButton("MBR", true, () -> {
+        this.MBRField = new OctalInputWithButton("MBR", true, false, () -> {
             this.setFieldFromOctal(this.MBRField);
             this.bus.post(new SetMBR(this.MBRField.getValue()));
         });
         programInputs.add(this.MBRField.buildInput());
         programInputs.add(Box.createVerticalStrut(2));
-        this.IRField = new OctalInputWithButton("IR", false, () -> {
+        this.IRField = new OctalInputWithButton("IR", false, false, () -> {
         });
         programInputs.add(this.IRField.buildInput());
         programInputs.add(Box.createVerticalStrut(2));
@@ -222,8 +215,8 @@ public class MainPanel implements AutoCloseable {
         JPanel actionInputs = new JPanel();
         actionInputs.setBorder(new EmptyBorder(12, 12, 12, 12));
         actionInputs.setLayout(new BoxLayout(actionInputs, BoxLayout.Y_AXIS));
-        actionInputs.add(Box.createVerticalStrut(10));
-        this.octalInputField = new OctalInputWithButton("Octal Input", false, () -> {});
+        actionInputs.add(Box.createVerticalStrut(2));
+        this.octalInputField = new OctalInputWithButton("Octal Input", false, true, () -> {});
         actionInputs.add(this.octalInputField.buildInput());
         this.binaryField = new BinaryField(this.octalInputField);
         actionInputs.add(binaryField.buildInput());
@@ -264,10 +257,10 @@ public class MainPanel implements AutoCloseable {
         JPanel errorCodes = new JPanel();
         errorCodes.setBorder(new EmptyBorder(12, 12, 12, 12));
         errorCodes.setLayout(new BoxLayout(errorCodes, BoxLayout.Y_AXIS));
-        errorCodes.add(new OctalInputWithButton("CC", false, () -> {
+        errorCodes.add(new OctalInputWithButton("CC", false, false, () -> {
         }).buildInput());
         errorCodes.add(Box.createVerticalStrut(2));
-        errorCodes.add(new OctalInputWithButton("MFR", false, () -> {
+        errorCodes.add(new OctalInputWithButton("MFR", false, false, () -> {
         }).buildInput());
         secondRow.add(errorCodes);
         secondRow.add(Box.createVerticalStrut(20));
@@ -276,7 +269,7 @@ public class MainPanel implements AutoCloseable {
         JPanel fileInput = new JPanel();
         fileInput.setBorder(new EmptyBorder(12, 12, 12, 12));
         fileInput.setLayout(new BoxLayout(fileInput, BoxLayout.Y_AXIS));
-        FileInput fileInputHandler = new FileInput();
+        FileInput fileInputHandler = new FileInput("Browse...", defaultFilePath != null ? defaultFilePath.toFile() : null);
         fileInput.add(fileInputHandler);
         fileInput.add(Box.createHorizontalStrut(10));
         thirdRow.add(fileInput);
