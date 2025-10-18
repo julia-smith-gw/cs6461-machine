@@ -84,10 +84,6 @@ public class CPU implements AutoCloseable {
         this.IR = memory.readMBR(); // Place into IR
         this.bus.post(new PCChanged(this.PC));
         this.PC++;
-
-        // notify listeners of change (interface)
-        this.bus.post(new MARChanged(this.memory.MAR));
-        this.bus.post(new MBRChanged(this.memory.MBR));
         this.bus.post(new IRChanged(this.IR));
 
     }
@@ -154,6 +150,7 @@ public class CPU implements AutoCloseable {
                 return;
             }
             memory.readMemory(this.memory.MAR);
+            // update +1 MAR before load plus is read again if applicable
             this.bus.post(new MARChanged(this.memory.MAR));
             this.bus.post(new MBRChanged(this.memory.MBR));
             this.bus.post(new MessageChanged("Value of " + this.memory.MBR + " was stored at address " + this.memory.MAR
@@ -203,7 +200,7 @@ public class CPU implements AutoCloseable {
      * Op code STX. Stores index register value into memory.
      */
     public void storeIndexRegister() {
-        memory.writeMemory(effectiveAddress, this.IX);
+        memory.writeMemory(effectiveAddress, IXR[R]);
     }
 
     /**
@@ -302,9 +299,9 @@ public class CPU implements AutoCloseable {
                 case 02: {
                     try {
                         this.setEffectiveAddress(opcode);
-                        int reg = (IR >> 8) & 0x03;
-                        int addr = IR & 0xFF;
-                        memory.writeMemory(addr, GPR[reg]);
+                        memory.writeMemory(effectiveAddress, GPR[R]);
+                        this.bus.post(new MARChanged(this.memory.MAR));
+                        this.bus.post(new MBRChanged(this.memory.MBR));
                     } catch (Exception e) {
                         System.out.println(e.getMessage());
                         this.bus.post(new MessageChanged(e.getMessage()));
@@ -327,13 +324,11 @@ public class CPU implements AutoCloseable {
                     try {
                         this.setEffectiveAddress(opcode);
                         storeIndexRegister();
-
                     } catch (Exception e) {
                         System.out.println(e.getMessage());
                         this.bus.post(new MessageChanged(e.getMessage()));
                         this.halt();
                     }
-
                     break;
                 }
                 default: {
