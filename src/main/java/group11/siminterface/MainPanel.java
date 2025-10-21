@@ -51,6 +51,8 @@ public class MainPanel implements AutoCloseable {
     public OctalInputWithButton octalInputField;
     public BinaryField  binaryField;
     public JTextArea messageField;
+    public JTextArea cacheField;
+    public JTextField consoleInput;
 
    public MainPanel(EventBus bus) {
         this.bus = bus;
@@ -208,7 +210,17 @@ public class MainPanel implements AutoCloseable {
         });
         programInputs.add(this.IRField.buildInput());
         programInputs.add(Box.createVerticalStrut(2));
-        firstRow.add(programInputs);
+        programInputs.add(Box.createHorizontalStrut(10));
+
+        // cache field
+        JPanel cachePanel = new JPanel();
+        cachePanel.setBorder(new EmptyBorder(12, 12, 12, 12));
+        cachePanel.setLayout(new BoxLayout(cachePanel, BoxLayout.Y_AXIS));
+        this.cacheField = new JTextArea(10, 20);
+        cachePanel.add(new JLabel("Cache Content"));
+        cachePanel.add(this.cacheField);
+        firstRow.add(cachePanel);
+
         firstRow.add(Box.createVerticalStrut(20));
 
         // binary display/octal
@@ -279,13 +291,25 @@ public class MainPanel implements AutoCloseable {
         JPanel messagePanel = new JPanel();
         messagePanel.setBorder(new EmptyBorder(12, 12, 24, 12)); 
         messagePanel.setLayout(new BorderLayout());
-        this.messageField = new JTextArea(5, 20);
+        this.messageField = new JTextArea(5, 10);
         this.messageField.setEditable(false);
         this.messageField.setLineWrap(true);
         JScrollPane scrollPane = new JScrollPane(this.messageField); // Wrap in JScrollPane for scrolling
+        messagePanel.add(new JLabel("Console Output"), BorderLayout.NORTH); // Add the label to the west (left)
         messagePanel.add(scrollPane, BorderLayout.CENTER);
         fourthRow.add(messagePanel);
 
+        // console input
+        JPanel inputPanel = new JPanel();
+        inputPanel.setBorder(new EmptyBorder(12, 12, 24, 12)); 
+        inputPanel.setLayout(new BorderLayout());
+        this.consoleInput= new JTextField();
+        inputPanel.add(new JLabel("Console Input"), BorderLayout.NORTH);
+        inputPanel.add(this.consoleInput);
+        ActionButton consoleInputButton = new ActionButton("Submit", ()->{
+        });
+        inputPanel.add(consoleInputButton, BorderLayout.EAST);
+        fourthRow.add(inputPanel);
         root.add(firstRow);
         root.add(secondRow);
         root.add(thirdRow);
