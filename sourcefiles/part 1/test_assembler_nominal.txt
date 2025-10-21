@@ -1,0 +1,21 @@
+LOC 6
+VAL42:     Data 42
+THREE:     Data 3
+BASE:      Data 1024
+BIG:       Data 2000
+SLOT0:     Data 0
+DOZEN:     Data 12
+NINE:      Data 9
+EIGHTEEN:  Data 18
+PTR1048:   Data 1048
+FARVAL:    Data 777
+INDVAL:    Data 999
+LOC 100
+LDX 1,BASE              ; X1 <- c(8) = 1024
+LDX 2,THREE             ; X2 <- c(7) = 3
+LDR 0,1,6
+LDR 3,0,PTR1048,1 	;Indirect: EA0 = 14; I=1 => EA = c(14)=1048 => R3 <- c(1048)=999
+STR 3,0,SLOT0   	;Store R3 into SLOT0 ([10])
+LDA 2,0,30  		;Load EA (address 30) into R2
+STX 2,11    		;Store X2 (3) into SLOT0+1 ([11])
+LDX 3,DOZEN  		;Load X3 from DOZEN ([11])
