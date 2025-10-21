@@ -50,6 +50,8 @@ public class CPU implements AutoCloseable {
     public int I;
     public int opcode;
     public String message;
+    public boolean[] CC = new boolean[4]; // CC[0]=OVERFLOW, CC[1]=UNDERFLOW, CC[2]=DIVZERO, CC[3]=EQUALORNOT
+
 
     public CPU(Memory memory, EventBus bus, RomLoader romLoader) {
         this.memory = memory;
@@ -309,6 +311,7 @@ public class CPU implements AutoCloseable {
                     }
                     break;
                 }
+
                 case 041: {
                     try {
                         this.setEffectiveAddress(opcode);
@@ -331,6 +334,164 @@ public class CPU implements AutoCloseable {
                     }
                     break;
                 }
+
+                case 004: { // AMR r,x,address[,I]
+                    try {
+                        this.setEffectiveAddress(opcode);
+                        memory.readMemory(effectiveAddress);
+                        int memValue = memory.readMBR();
+                        GPR[R] = (GPR[R] + memValue) & 0xFFFF; // 16-bit register
+                        bus.post(new GPRChanged(R, GPR[R]));
+                        bus.post(new MessageChanged("AMR executed: R" + R + " = " + GPR[R]));
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged("AMR failed: " + e.getMessage()));
+                        halt();
+                    }
+                    break;
+                }
+
+               case 005: { // SMR r,x,address[,I]
+                    try {
+                        this.setEffectiveAddress(opcode);
+                        memory.readMemory(effectiveAddress);
+                        int memValue = memory.readMBR();
+                        GPR[R] = (GPR[R] - memValue) & 0xFFFF; // 16-bit register
+                        bus.post(new GPRChanged(R, GPR[R]));
+                        bus.post(new MessageChanged("SMR executed: R" + R + " = " + GPR[R]));
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged("SMR failed: " + e.getMessage()));
+                        halt();
+                    }
+                    break;
+                }
+
+            case 006: { // AIR r, immed
+                    try {
+                        int r = (IR >> 6) & 0x03;
+                        int immed = IR & 0x3F; // lower 6 bits (adjust depending on ISA spec)
+                        
+                        if (immed == 0) {
+                            bus.post(new MessageChanged("AIR skipped (Immed = 0)"));
+                            break;
+                        }
+
+                        if (GPR[r] == 0) {
+                            GPR[r] = immed;
+                        } else {
+                            GPR[r] = (GPR[r] + immed) & 0xFFFF;
+                        }
+
+                        bus.post(new GPRChanged(r, GPR[r]));
+                        bus.post(new MessageChanged("AIR executed: R" + r + " = " + GPR[r]));
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged("AIR failed: " + e.getMessage()));
+                        halt();
+                    }
+                    break;
+                }
+
+            case 007: { // SIR r, immed
+                    try {
+                        int r = (IR >> 6) & 0x03;
+                        int immed = IR & 0x3F; // lower 6 bits
+                        
+                        if (immed == 0) {
+                            bus.post(new MessageChanged("SIR skipped (Immed = 0)"));
+                            break;
+                        }
+
+                        if (GPR[r] == 0) {
+                            GPR[r] = (-immed) & 0xFFFF;
+                        } else {
+                            GPR[r] = (GPR[r] - immed) & 0xFFFF;
+                        }
+
+                        bus.post(new GPRChanged(r, GPR[r]));
+                        bus.post(new MessageChanged("SIR executed: R" + r + " = " + GPR[r]));
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged("SIR failed: " + e.getMessage()));
+                        halt();
+                    }
+                    break;
+                }
+            case 056: { // MLT rx, ry
+                    try {
+                        int ry = (IR >> 8) & 0x03;
+                        int rx = (IR >> 6) & 0x03;
+
+                        if ((rx != 0 && rx != 2) || (ry != 0 && ry != 2)) {
+                            throw new IllegalArgumentException("MLT: rx and ry must be 0 or 2.");
+                        }
+
+                        long result = (long) GPR[rx] * (long) GPR[ry];
+                        GPR[rx] = (int) ((result >> 16) & 0xFFFF);  // high order bits
+                        GPR[rx + 1] = (int) (result & 0xFFFF);      // low order bits
+
+                        // Set overflow flag if result exceeds 32 bits
+                        if (result > 0xFFFFFFFFL || result < 0) {
+                            CC[0] = true; // Overflow flag
+                        } else {
+                            CC[0] = false;
+                        }
+
+                        bus.post(new GPRChanged(rx, GPR[rx]));
+                        bus.post(new GPRChanged(rx + 1, GPR[rx + 1]));
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged(e.getMessage()));
+                        halt();
+                    }
+                    break;
+                }
+
+            case 057: { // DVD rx, ry
+                    try {
+                        int ry = (IR >> 8) & 0x03;
+                        int rx = (IR >> 6) & 0x03;
+
+                        if ((rx != 0 && rx != 2) || (ry != 0 && ry != 2)) {
+                            throw new IllegalArgumentException("DVD: rx and ry must be 0 or 2.");
+                        }
+
+                        if (GPR[ry] == 0) {
+                            CC[2] = true; // DIVZERO flag
+                            throw new ArithmeticException("Division by zero in DVD instruction.");
+                        }
+
+                        int quotient = GPR[rx] / GPR[ry];
+                        int remainder = GPR[rx] % GPR[ry];
+                        GPR[rx] = quotient;
+                        GPR[rx + 1] = remainder;
+
+                        bus.post(new GPRChanged(rx, GPR[rx]));
+                        bus.post(new GPRChanged(rx + 1, GPR[rx + 1]));
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged(e.getMessage()));
+                        halt();
+                    }
+                    break;
+                }
+
+            case 58: { // TRR rx, ry
+                 try {
+                        int ry = (IR >> 8) & 0x03;
+                        int rx = (IR >> 6) & 0x03;
+
+                        if (GPR[rx] == GPR[ry]) {
+                            CC[3] = true; // EQUAL flag
+                        } else {
+                            CC[3] = false;
+                        }
+
+                        bus.post(new MessageChanged("TRR executed. rx=" + GPR[rx] + ", ry=" + GPR[ry] +
+                                                    ", EqualFlag=" + CC[3]));
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged(e.getMessage()));
+                        halt();
+                    }
+                    break;
+                }
+
+
                 default: {
                     System.out.println("Unknown opcode. May be data: " + opcode);
                     break;
