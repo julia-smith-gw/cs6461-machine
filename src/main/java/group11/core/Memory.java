@@ -49,6 +49,16 @@ public class Memory {
         MBR = memory[MAR];
     }
 
+    public int getMemoryValueAt(int address){
+        checkAddress(address);
+        return memory[address];
+    }
+
+    public void writeMemoryDirect(int address, int data) {
+                checkAddress(address);
+                      memory[MAR] = MBR;
+    }
+
     public void reset() {
         for (int i = 0; i < MEMORY_SIZE; i++) {
             memory[i] = 0;
