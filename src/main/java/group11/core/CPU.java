@@ -272,6 +272,28 @@ public class CPU implements AutoCloseable {
         I = i;
     }
 
+    // helpers for logical/shift/rotate
+    private int mask16(int v) { return v & 0xFFFF; }
+
+    private int rotLeft16(int v, int c) {
+        c = c & 15;
+        return mask16((v << c) | ((v & 0xFFFF) >>> (16 - c)));
+    }
+
+    private int rotRight16(int v, int c) {
+        c = c & 15; 
+        return mask16(((v & 0xFFFF) >>> c) | (v << (16 - c)));
+    }
+
+    /**
+     * Bit-field accessors for SRC/RRC 
+     */
+    private int srFieldR(int ir)     { return (ir >> 8) & 0x03; } 
+    private int srFieldAL(int ir)    { return (ir >> 7) & 0x01; } 
+    private int srFieldLR(int ir)    { return (ir >> 6) & 0x01; } 
+    private int srFieldCount(int ir) { return (ir >> 2) & 0x0F; } 
+
+
     /**
      * Decodes and executes instruction from file.
      */
@@ -490,6 +512,117 @@ public class CPU implements AutoCloseable {
                     }
                     break;
                 }
+            
+            case 073: { // AND rx, ry   
+                try {
+                        int ry = (IR >> 8) & 0x03;
+                        int rx = (IR >> 6) & 0x03;
+                        GPR[rx] = (GPR[rx] & GPR[ry]) & 0xFFFF;
+                        bus.post(new GPRChanged(rx, GPR[rx]));
+                        bus.post(new MessageChanged("AND executed: R" + rx + " = " + GPR[rx] + " (& R" + ry + ")"));
+                    } catch (Exception e) { bus.post(new MessageChanged(e.getMessage())); halt(); }
+                break;
+            }
+
+            case 074: { // ORR rx, ry   
+                try {
+                    int ry = (IR >> 8) & 0x03;
+                    int rx = (IR >> 6) & 0x03;
+                    GPR[rx] = (GPR[rx] | GPR[ry]) & 0xFFFF;
+                    bus.post(new GPRChanged(rx, GPR[rx]));
+                    bus.post(new MessageChanged("ORR executed: R" + rx + " = " + GPR[rx] + " (| R" + ry + ")"));
+                } catch (Exception e) { bus.post(new MessageChanged(e.getMessage())); halt(); }
+                break;
+            }
+
+            case 075: { // NOT rx       
+                try {
+                    int rx = (IR >> 6) & 0x03;
+                    GPR[rx] = (~GPR[rx]) & 0xFFFF;
+                    bus.post(new GPRChanged(rx, GPR[rx]));
+                    bus.post(new MessageChanged("NOT executed: R" + rx + " = " + GPR[rx]));
+                } catch (Exception e) { bus.post(new MessageChanged(e.getMessage())); halt(); }
+                break;
+            }
+
+            case 031: { // SRC r, count, L/R, A/L   
+                try {
+                    int r = srFieldR(IR);
+                    int al = srFieldAL(IR); 
+                    int lr = srFieldLR(IR); 
+                    int count = srFieldCount(IR) & 0x0F;
+
+                    if (count == 0) { bus.post(new MessageChanged("SRC skipped (Count=0)")); break; }
+
+                    int v = GPR[r] & 0xFFFF;
+                    int sign = v & 0x8000;
+
+                    if (lr == 1) { 
+                        if (al == 1) { 
+                            v = (v << count) & 0xFFFF;
+                        } else {       
+                            int payload = (v & 0x7FFF) << count;
+                            v = sign | (payload & 0x7FFF);
+                        }
+                    } else { 
+                        if (al == 1) { 
+                            v = (v & 0xFFFF) >>> count;
+                        } else {       
+                            int tmp = v;
+                            for (int i = 0; i < count; i++) {
+                                tmp = (tmp >>> 1) | sign;
+                            }
+                            v = tmp & 0xFFFF;
+                        }
+                    }
+
+                    GPR[r] = v;
+                    bus.post(new GPRChanged(r, GPR[r]));
+                    bus.post(new MessageChanged(
+                            "SRC executed: R" + r + " = " + String.format("0x%04X", GPR[r]) +
+                            " (count=" + count + ", " + (lr==1?"L":"R") + "," + (al==1?"L":"A") + ")"));
+                } catch (Exception e) { bus.post(new MessageChanged("SRC failed: " + e.getMessage())); halt(); }
+                break;
+            }
+            case 032: { // RRC r, count, L/R, A/L   
+                try {
+                    int r = srFieldR(IR);
+                    int lr = srFieldLR(IR);
+                    int count = srFieldCount(IR) & 0x0F;
+                    if (count == 0) { bus.post(new MessageChanged("RRC skipped (Count=0)")); break; }
+
+                    int v = GPR[r] & 0xFFFF;
+                    v = (lr == 1) ? rotLeft16(v, count) : rotRight16(v, count);
+
+                    GPR[r] = v;
+                    bus.post(new GPRChanged(r, GPR[r]));
+                    bus.post(new MessageChanged(
+                            "RRC executed: R" + r + " = " + String.format("0x%04X", GPR[r]) +
+                            " (count=" + count + ", " + (lr==1?"L":"R") + ")"));
+                } catch (Exception e) { bus.post(new MessageChanged("RRC failed: " + e.getMessage())); halt(); }
+                break;
+            }
+
+            case 061: { // IN r, devid      
+                try {
+                    int r = (IR >> 6) & 0x03;
+                    int devid = (IR >> 8) & 0x1F;
+                    int value = 0;
+                    GPR[r] = value & 0xFFFF;
+                    bus.post(new GPRChanged(r, GPR[r]));
+                    bus.post(new MessageChanged("IN executed: R" + r + " <- device[" + devid + "] (stubbed=0)"));
+                } catch (Exception e) { bus.post(new MessageChanged("IN failed: " + e.getMessage())); halt(); }
+                break;
+            }
+            case 062: { // OUT r, devid     
+                try {
+                    int r = (IR >> 6) & 0x03;
+                    int devid = (IR >> 8) & 0x1F;
+                    int value = GPR[r] & 0xFFFF;
+                    bus.post(new MessageChanged("OUT executed: device[" + devid + "] <- R" + r + " (" + value + ")"));
+                } catch (Exception e) { bus.post(new MessageChanged("OUT failed: " + e.getMessage())); halt(); }
+                break;
+            }
 
 
                 default: {
