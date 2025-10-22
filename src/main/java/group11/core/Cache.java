@@ -4,6 +4,8 @@ import java.util.LinkedList;
 
 import java.util.Arrays;
 import java.util.Deque;
+
+import group11.events.CacheChanged;
 import group11.events.EventBus;
 
 //https://chatgpt.com/share/68f82dbc-e1d0-8007-9397-bfb5a3b367d9
@@ -27,6 +29,7 @@ public class Cache {
         CacheLine [] cacheLines = new CacheLine[CACHE_LINES];
         Arrays.fill(cacheLines, new CacheLine());
         this.queue = new LinkedList<>(Arrays.asList(cacheLines));
+        this.dumpSummary();
     }
 
       /** READ: fill on miss, FIFO replacement. */
@@ -41,6 +44,7 @@ public class Cache {
         // Miss: pick a line (prefer any invalid; else evict oldest valid)
         CacheLine newlyWrittenLine = this.getNextWriteLine();
         this.fillFromMemory(newlyWrittenLine, address);
+          this.dumpSummary();
         return newlyWrittenLine.data[offset];
         }
     }
@@ -63,6 +67,7 @@ public class Cache {
             // No-write-allocate on miss: bypass cache
             memory.writeMemoryDirect(address, value);
         }
+          this.dumpSummary();
     }
 
     public CacheLine getNextWriteLine() {
@@ -94,11 +99,12 @@ public class Cache {
         ln.tag = tag;
         ln.valid = true;
         this.queue.addLast(ln); // becomes newest in FIFO
+      
     }
 
     // -------------------- Optional: debug --------------------
 
-    public String dumpSummary() {
+    public void dumpSummary() {
         StringBuilder sb = new StringBuilder();
         sb.append("Cache {LINES=").append(CACHE_LINES)
           .append(", BLOCK_SIZE=").append(LINE_SIZE_WORDS)
@@ -109,7 +115,7 @@ public class Cache {
                     lineIndex, line.valid ? 1 : 0, line.tag, line.block, Arrays.toString(line.data)));
                     lineIndex++;
         }
-        return sb.toString();
+        this.eventBus.post(new CacheChanged(sb.toString()));
     }
 
     // https://chatgpt.com/share/68f82524-1d5c-8007-8d8c-d23ce9706e81

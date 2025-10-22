@@ -3,6 +3,7 @@ package group11.siminterface;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import group11.core.CPU;
+import group11.events.CacheChanged;
 import group11.events.EventBus;
 import group11.events.GPRChanged;
 import group11.events.IRChanged;
@@ -36,6 +37,7 @@ public class MainPanel implements AutoCloseable {
     private final AutoCloseable MBRChangedSub;
     private final AutoCloseable IRChangedSub;
     private final AutoCloseable messageChangedSub;
+    private final AutoCloseable cacheChangedSub;
 
     public OctalInputWithButton MBRField;
     public OctalInputWithButton MARField;
@@ -105,6 +107,9 @@ public class MainPanel implements AutoCloseable {
         });
         this.messageChangedSub = bus.subscribe(MessageChanged.class, cmd -> {
             this.messageField.setText(cmd.value());
+        });
+        this.cacheChangedSub = bus.subscribe(CacheChanged.class, cmd ->{
+            this.cacheField.setText(cmd.cacheContent());
         });
     }
 
