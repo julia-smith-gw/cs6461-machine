@@ -623,7 +623,151 @@ public class CPU implements AutoCloseable {
                 } catch (Exception e) { bus.post(new MessageChanged("OUT failed: " + e.getMessage())); halt(); }
                 break;
             }
+            //written with gpt assistance 
+            case 010: { // JZ r,x,address[,I]
+                    try {
+                        this.setEffectiveAddress(opcode);
+                        boolean isZero = (GPR[R] & 0xFFFF) == 0;
+                        CC[3] = isZero; // EQUAL flag reflects result
 
+                        if (isZero) {
+                            this.PC = this.effectiveAddress;
+                            bus.post(new MessageChanged("JZ taken: R" + R + "=0 → PC=" + this.PC));
+                        } else {
+                            bus.post(new MessageChanged("JZ not taken: R" + R + "=" + GPR[R]));
+                        }
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged("JZ failed: " + e.getMessage()));
+                        halt();
+                    }
+                    break;
+                }
+
+                case 011: { // JNE r,x,address[,I]
+                    try {
+                        this.setEffectiveAddress(opcode);
+                        boolean notZero = (GPR[R] & 0xFFFF) != 0;
+                        CC[3] = !notZero ? true : false; // If equal, set; if not equal, clear
+
+                        if (notZero) {
+                            this.PC = this.effectiveAddress;
+                            bus.post(new MessageChanged("JNE taken: R" + R + "!=0 → PC=" + this.PC));
+                        } else {
+                            bus.post(new MessageChanged("JNE not taken: R" + R + "=0"));
+                        }
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged("JNE failed: " + e.getMessage()));
+                        halt();
+                    }
+                    break;
+                }
+
+                case 012: { // JCC cc,x,address[,I]
+                    try {
+                        this.setEffectiveAddress(opcode);
+                        int ccIndex = R; // R field = condition code bit index (0–3)
+                        if (ccIndex < 0 || ccIndex > 3)
+                            throw new IllegalArgumentException("Invalid CC index: " + ccIndex);
+
+                        if (CC[ccIndex]) {
+                            this.PC = this.effectiveAddress;
+                            bus.post(new MessageChanged("JCC taken: CC[" + ccIndex + "]=1 → PC=" + this.PC));
+                        } else {
+                            bus.post(new MessageChanged("JCC not taken: CC[" + ccIndex + "]=0"));
+                        }
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged("JCC failed: " + e.getMessage()));
+                        halt();
+                    }
+                    break;
+                }
+
+                case 013: { // JMA x,address[,I] – unconditional jump
+                    try {
+                        this.setEffectiveAddress(opcode);
+                        this.PC = this.effectiveAddress;
+                        bus.post(new MessageChanged("JMA executed: PC <- " + this.PC));
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged("JMA failed: " + e.getMessage()));
+                        halt();
+                    }
+                    break;
+                }
+
+                case 014: { // JSR x,address[,I]
+                    try {
+                        this.setEffectiveAddress(opcode);
+                        // Save return address (current PC, which already points to next instruction)
+                        GPR[3] = this.PC & 0xFFFF;
+                        bus.post(new GPRChanged(3, GPR[3]));
+
+                        // Jump to subroutine target
+                        this.PC = this.effectiveAddress;
+                        bus.post(new MessageChanged("JSR executed: Saved R3=" + GPR[3] + ", PC=" + this.PC));
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged("JSR failed: " + e.getMessage()));
+                        halt();
+                    }
+                    break;
+                }
+
+                case 015: { // RFS immed – return from subroutine
+                    try {
+                        int immed = this.IR & 0x1F; // lower 5 bits are immediate
+                        GPR[0] = immed & 0xFFFF;
+                        bus.post(new GPRChanged(0, GPR[0]));
+
+                        // Restore PC from R3
+                        this.PC = GPR[3] & 0xFFFF;
+                        bus.post(new MessageChanged("RFS executed: R0 <- " + immed + ", PC <- " + this.PC));
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged("RFS failed: " + e.getMessage()));
+                        halt();
+                    }
+                    break;
+                }
+
+                case 016: { // SOB r,x,address[,I]
+                    try {
+                        this.setEffectiveAddress(opcode);
+                        int before = GPR[R];
+                        int after = (before - 1) & 0xFFFF;
+                        GPR[R] = after;
+                        bus.post(new GPRChanged(R, GPR[R]));
+
+                        // Update EQUAL flag: if result == 0, CC[3]=true
+                        CC[3] = (after == 0);
+
+                        if ((short) after > 0) {
+                            this.PC = this.effectiveAddress;
+                            bus.post(new MessageChanged("SOB taken: R" + R + " " + before + "→" + after + ", PC=" + this.PC));
+                        } else {
+                            bus.post(new MessageChanged("SOB not taken: R" + R + " " + before + "→" + after));
+                        }
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged("SOB failed: " + e.getMessage()));
+                        halt();
+                    }
+                    break;
+                }
+
+                case 017: { // JGE r,x,address[,I]
+                    try {
+                        this.setEffectiveAddress(opcode);
+                        int signedVal = (short) GPR[R];
+                        CC[3] = (signedVal == 0); // equal flag if exactly zero
+                        if (signedVal >= 0) {
+                            this.PC = this.effectiveAddress;
+                            bus.post(new MessageChanged("JGE taken: R" + R + "=" + signedVal + " ≥ 0 → PC=" + this.PC));
+                        } else {
+                            bus.post(new MessageChanged("JGE not taken: R" + R + "=" + signedVal + " < 0"));
+                        }
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged("JGE failed: " + e.getMessage()));
+                        halt();
+                    }
+                    break;
+                }
 
                 default: {
                     System.out.println("Unknown opcode. May be data: " + opcode);
