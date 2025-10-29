@@ -1,0 +1,66 @@
+LOC 300
+Data 0            ; 300: 0        (for JZ test)
+Data 2            ; 301: 2        (for SOB first case)
+Data 1            ; 302: 1        (for SOB second case)
+Data -3           ; 303: -3       (for JGE negative test)
+Data 5            ; 304: 5        (for JNE and JGE positive test)
+LOC 400
+Data 0            ; 400 (marker if JZ failed)
+Data 0            ; 401 (marker if JNE failed)
+Data 0            ; 402 (should get R0 == 0 when JCC not taken)
+Data 0            ; 403 (skip)
+Data 0            ; 404 (should get R0 == 9 after subroutine return)
+Data 0            ; 405 (not used)
+Data 0            ; 406 (not used)
+Data 0            ; 407 (should get R2 == 0 after SOB not taken)
+Data 0            ; 408 (should get R3 == -3 after JGE not taken)
+Data 0            ; 409 (not used)
+
+LOC 100
+LDR 0,0,300        ; R0 <- M[300]  (will be 0)   -- test JZ
+JZ 0,0,110         ; if R0==0 jump to 110
+STR 0,0,400        ; (would mark a fail if JZ didn't jump)
+
+LOC 110
+LDR 1,0,304        ; R1 <- M[304]  (will be 5)
+JNE 1,0,120        ; jump because R1 != 0
+STR 1,0,401        ; (would mark fail if JNE didn't jump)
+
+LOC 120
+JCC 0,0,130        ; test JCC with cc(0) — we haven't set CC, so this should NOT jump
+STR 0,0,402        ; store R0 (0) to M[402] to show JCC not taken
+
+LOC 130
+JMA 0,150,0       ; unconditional jump to 150
+STR 0,0,403       ; (should be skipped)
+
+LOC 150
+JSR 0,160         ; Jump and Save — R3 <- PC+1 ; PC <- 160
+STR 0,0,404       ; after return, R0 should have the return code placed by RFS
+
+LOC 160              ; subroutine: return immediately with return code = 9
+RFS 9             ; R0 <- 9 ; PC <- c(R3)
+
+LOC 170
+LDR 2,0,301       ; R2 <- M[301]  (value = 2)
+SOB 2,0,200       ; r <- r-1 ; if r>0 PC<-200 (should branch because R2 goes 2->1)
+
+LOC 200
+LDR 2,0,302       ; R2 <- M[302]  (value = 1)
+SOB 2,0,210       ; r <- r-1 ; if r>0 PC<-210 (1->0 so should NOT branch)
+STR 2,0,407       ; store final R2 here (expected 0)
+
+LOC 210
+LDR 3,0,303       ; R3 <- M[303]  (value = -3)
+JGE 3,0,220       ; jump if R3 >= 0 (should NOT jump)
+STR 3,0,408       ; store negative R3 to M[408] to verify not taken
+
+LDR 3,0,304       ; R3 <- M[304]  (value = 5)
+JGE 3,0,230       ; since 5 >= 0, should jump to 230 (skip the next STR)
+
+LOC 220
+STR 3,0,409       ; (should be skipped when jump at 207 works)
+
+LOC 230
+HLT               ; end of test
+

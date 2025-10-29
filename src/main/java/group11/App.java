@@ -6,6 +6,7 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
 import group11.core.CPU;
+import group11.core.Cache;
 import group11.core.Memory;
 import group11.core.RomLoader;
 import group11.events.EventBus;
@@ -21,7 +22,8 @@ public class App
         Memory memory = new Memory();
         EventBus eventBus = new EventBus();
         RomLoader romLoader = new RomLoader(memory);
-        CPU cpu = new CPU(memory, eventBus, romLoader);
+        Cache cache = new Cache(memory, eventBus);
+        CPU cpu = new CPU(memory, eventBus, cache, romLoader);
   
             SwingUtilities.invokeLater(() -> {
                 Path defaultRom = null;

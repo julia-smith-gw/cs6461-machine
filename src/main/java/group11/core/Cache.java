@@ -44,7 +44,7 @@ public class Cache {
         // Miss: pick a line (prefer any invalid; else evict oldest valid)
         CacheLine newlyWrittenLine = this.getNextWriteLine();
         this.fillFromMemory(newlyWrittenLine, address);
-          this.dumpSummary();
+        this.dumpSummary();
         return newlyWrittenLine.data[offset];
         }
     }
