@@ -1,21 +1,37 @@
 LOC 6
-LDA 0,0,300        ; 1) Seed R0=300 and stash it in a safe small cell R0 = 300
-STR 0,0,20         ; [20] = 300        (safe small address)
-LDX 1,20           ; (Option A) Touch M[300] BEFORE IN to set MAR=300 (if IN uses MAR as base) X1 = [20] = 300
-LDR 3,1,0          ; R3 <- M[X1] (=M[300]); sets MAR=300
-OUT 0,1            ; guidance
-IN  0,0            ; read 20 ints (either uses MAR=300 or R0=300, depending on your IN)
-LDX 1,20           ; re-seed X1=300 after IN, just in case
-LDR 0,0,20         ; RE-SEED X1 AFTER IN (defensive against any side effects in IN) R0 = [20] = 300
-STR 0,0,20         ; (no-op logically; keeps [20] = 300)
-LDX 1,20           ; X1 = 300
-LDA 2,0,20         ;  Print loop (20 elements starting at X1)R2 = 20. loop @ next line:
-LDR 3,1,0          ; R3 <- M[X1]
-OUT 3,1            ; print
-STX 1,20           ; [20] <- X1
-LDR 0,0,20         ; R0 <- [20]
+zero: DATA 0
+LDA 0,0,zero       ; R0 = 0300 (octal)
+AIR 0,3            ; R0 = 3
+SRC 0,6,L,L        ; shift left 6 (LR=1 for left, AL=0 for logical) → R0 = 0300
+STR 0,0,20         ; [0020] = 0300 (safe cell far from buffer)
+LDX 1,20           ; X1 = [0020] = 0300  (touches M[0300] before IN)
+LDR 3,1,0          ; R3 <- M[X1] (sets MAR=0300; good if IN uses MAR)
+LDA 3,0,zero       ; R3 = 0
+LDR 3,0,zero       ; R3 ← M[zero] = 0   (since zero: DATA 0)
+AIR 3,20           ; R3 = 20
+OUT 0,1            ; guidance for 20 numbers (see AIR and LDA above)
+IN  0,0            ; store 20 ints at M[R0] .. M[R0+19]
+LDX 1,20           ; re-seed X1 = [0020] = 0300
+LDR 0,0,20         ; R0 = [0020] = 0300 (defensive)
+STR 0,0,20         ; keep [0020] = 0300
+LDX 1,20           ; X1 = 0300
+LDA 2,0,20         ; R2 = 20
+LDR 3,1,0          ; print loop: R3 = M[X1]
+OUT 3,3
+STX 1,20           ; [0020] = X1
+LDR 0,0,20         ; R0 = [0020]
 AIR 0,1            ; R0++
-STR 0,0,20         ; [20] <- R0
-LDX 1,20           ; X1 <- [20]
-SOB 2,0,17        ; jump back 7 instructions to LDR 3,1,0  (replace -7 with your assembler’s absolute target)
+STR 0,0,20         ; [0020] = R0
+LDX 1,20           ; X1 = [0020]
+SOB 2,0,23
+LDR 3,0,zero       ; R3 = 0   (clear count)
+AIR 3,1            ; R3 = 1   (only one number this time)
+LDR 0,0,20         ; R0 = [0020] = 0300
+AIR 0,20           ; R0 = 0300 + 20 = 0324 (next free 20-slot window)
+STR 0,0,21        ; save base at [0021] BEFORE IN clobbers R0
+OUT 0,1         ; ask for one number
+IN  0,0         ; reads 1 number into M[R0]
+LDX 1,21        ; X1 = saved base
+LDR 3,1,0       ; R3 = M[X1] -> the single number
+OUT 3,3
 HLT

@@ -15,14 +15,10 @@ public class InstructionStringUtil {
     }
 
     public static String extractOp(String[] instructionParts, String label) {
-     
-        System.out.println(Arrays.toString((instructionParts)));
         String op;
         if (label == null) {
-            System.out.println("null label");
             op = instructionParts[0];
         } else {
-            System.out.println("has label");
             op = instructionParts[1];
         }
         return op.toUpperCase();

@@ -35,7 +35,7 @@ public class App
                 e.printStackTrace();
             }
             JFrame f = new JFrame("Group 11 Computer Simulator");
-            f.setPreferredSize(new Dimension(1200, 800));
+            f.setPreferredSize(new Dimension(1500, 800));
             f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             f.setContentPane(new MainPanel(eventBus).initializeInterface(cpu, defaultRom));
             f.pack();

@@ -1,0 +1,39 @@
+             	LOC 6
+000006 000000	zero: DATA 0
+000007 006006	LDA 0,0,zero       ; R0 = 0300 (octal)
+000010 014003	AIR 0,3            ; R0 = 3
+000011 062154	SRC 0,6,L,L        ; shift left 6 (LR=1 for left, AL=0 for logical) → R0 = 0300
+000012 004024	STR 0,0,20         ; [0020] = 0300 (safe cell far from buffer)
+000013 102124	LDX 1,20           ; X1 = [0020] = 0300  (touches M[0300] before IN)
+000014 003500	LDR 3,1,0          ; R3 <- M[X1] (sets MAR=0300; good if IN uses MAR)
+000015 007406	LDA 3,0,zero       ; R3 = 0
+000016 003406	LDR 3,0,zero       ; R3 ← M[zero] = 0   (since zero: DATA 0)
+000017 015424	AIR 3,20           ; R3 = 20
+000020 144010	OUT 0,1            ; guidance for 20 numbers (see AIR and LDA above)
+000021 142000	IN  0,0            ; store 20 ints at M[R0] .. M[R0+19]
+000022 102124	LDX 1,20           ; re-seed X1 = [0020] = 0300
+000023 002024	LDR 0,0,20         ; R0 = [0020] = 0300 (defensive)
+000024 004024	STR 0,0,20         ; keep [0020] = 0300
+000025 102124	LDX 1,20           ; X1 = 0300
+000026 007024	LDA 2,0,20         ; R2 = 20
+000027 003500	LDR 3,1,0          ; print loop: R3 = M[X1]
+000030 145430	OUT 3,3
+000031 104124	STX 1,20           ; [0020] = X1
+000032 002024	LDR 0,0,20         ; R0 = [0020]
+000033 014001	AIR 0,1            ; R0++
+000034 004024	STR 0,0,20         ; [0020] = R0
+000035 102124	LDX 1,20           ; X1 = [0020]
+000036 035027	SOB 2,0,23
+000037 003406	LDR 3,0,zero       ; R3 = 0   (clear count)
+000040 015401	AIR 3,1            ; R3 = 1   (only one number this time)
+000041 002024	LDR 0,0,20         ; R0 = [0020] = 0300
+000042 014024	AIR 0,20           ; R0 = 0300 + 20 = 0324 (next free 20-slot window)
+000043 004025	STR 0,0,21        ; save base at [0021] BEFORE IN clobbers R0
+000044 144010	OUT 0,1         ; ask for one number
+000045 142000	IN  0,0         ; reads 1 number into M[R0]
+000046 102125	LDX 1,21        ; X1 = saved base
+000047 003500	LDR 3,1,0       ; R3 = M[X1] -> the single number
+000050 145430	OUT 3,3
+000051 000000	HLT
+
+** NO ERRORS FOUND DURING ASSEMBLY. LOAD FILE PRODUCED **

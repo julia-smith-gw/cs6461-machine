@@ -103,24 +103,35 @@ public class CPU implements AutoCloseable {
             if (line == null || line.trim().isEmpty()) {
                 value = 0;
             } else {
-                String[] parts = line.split("\\s+");
-                System.out.println("PARTS");
-                System.out.println(Arrays.toString(parts));
-                int[] numbers = new int[Math.min(parts.length, 2048)];
+                int count = GPR[3] & 0xFFFF;
+                if (count <= 0)
+                    count = 20; // default
 
-                for (int i = 0; i < numbers.length; i++) {
+                String normalized = (line == null) ? "" : line.trim();
+                String[] parts = normalized.isEmpty() ? new String[0] : normalized.split("[,\\s]+");
+
+                // How many we will actually consume
+                int n = Math.min(count, parts.length);
+
+                System.out.printf("IN: desired=%d, tokens_seen=%d, writing=%d, base=%04o%n",
+                        count, parts.length, n, inputBaseAddr & 0x7FF);
+                int[] numbers = new int[count];
+                System.out.printf("IN base check: R%d=%o -> base=%o%n", r, GPR[r], inputBaseAddr);
+
+                System.out.printf("IN: r=%d R[r]=%04o (%d) base=%04o (%d) desired=%d%n",
+                        r, GPR[r] & 0x7FF, GPR[r] & 0x7FF, inputBaseAddr, inputBaseAddr, count);
+                for (int i = 0; i < count; i++) {
                     numbers[i] = Integer.parseInt(parts[i]);
                     try {
                         int parsedInt = Integer.parseInt(parts[i]);
                         numbers[i] = parsedInt;
-                        memory.writeMemoryDirect(inputBaseAddr + i, numbers[i]);
-                        cache.store(inputBaseAddr + i, numbers[i]);
+                        int address = (inputBaseAddr + i) & 0x7FF;
+                        cache.store(address, numbers[i]);
+                        System.out.printf("IN write addr=%04o (%d) val=%d%n", address, address, parsedInt);
                     } catch (NumberFormatException e) {
                         throw new InputMismatchException("Input from IN includes invalid integers.");
                     }
                 }
-                System.out.println("NUMBERS");
-                System.out.println(Arrays.toString(numbers));
                 value = numbers[0];
             }
             GPR[r] = value;
@@ -147,7 +158,6 @@ public class CPU implements AutoCloseable {
         this.bus.post(new PCChanged(this.PC));
         this.PC++;
         this.bus.post(new IRChanged(this.IR));
-
     }
 
     /**
@@ -193,7 +203,6 @@ public class CPU implements AutoCloseable {
      * instructions one at a time
      */
     public void step() {
-        System.out.println("STEP");
         fetch();
         decodeAndExecute();
         this.completedInstructions++;
@@ -245,28 +254,32 @@ public class CPU implements AutoCloseable {
         }
     }
 
-    /**
-     * Op code LDX. Loads index register value from memory.
-     */
     public void loadIndexRegister() {
+        // EA computed already with setEffectiveAddress(opcode)
         int value = cache.load(effectiveAddress) & 0xFFFF;
 
-        // Update simulator-visible memory registers for listeners
+        // Update front-panel regs
         this.memory.MAR = effectiveAddress;
         this.memory.MBR = value;
         this.bus.post(new MARChanged(this.memory.MAR));
         this.bus.post(new MBRChanged(this.memory.MBR));
+
+        // *** Use IX (1..3) as the destination index register ***
+        if (IX < 1 || IX > 3) {
+            throw new IllegalArgumentException("LDX: index register must be 1..3, got " + IX);
+        }
         IXR[IX] = value;
         this.bus.post(new IXRChanged(IX, IXR[IX]));
+        System.out.printf("LDX debug: set IXR[%d]=%o from EA=%o%n", IX, IXR[IX], effectiveAddress);
     }
 
-    /**
-     * Op code STX. Stores index register value into memory.
-     */
     public void storeIndexRegister() {
+        if (IX < 1 || IX > 3) {
+            throw new IllegalArgumentException("STX: index register must be 1..3, got " + IX);
+        }
         cache.store(effectiveAddress, IXR[IX] & 0xFFFF);
 
-        // Keep simulator-visible memory registers consistent
+        // Keep simulator-visible memory regs consistent
         this.memory.MAR = effectiveAddress;
         this.memory.MBR = IXR[IX] & 0xFFFF;
         this.bus.post(new MARChanged(this.memory.MAR));
@@ -284,12 +297,12 @@ public class CPU implements AutoCloseable {
      * @param pendingEffectiveAddress address to check
      * @return true if valid or throws an error if not
      */
-    private boolean getIsValidAddress(Boolean ignoreReserved, int pendingEffectiveAddress) {
+    private boolean getIsValidAddress(Boolean ignoreReserved, boolean allowIndexingInEA, int pendingEffectiveAddress) {
         if (pendingEffectiveAddress >= this.memory.MEMORY_SIZE
                 || pendingEffectiveAddress < 0) {
             throw new IllegalArgumentException("Memory out of bounds access");
         }
-        if (!!ignoreReserved && (pendingEffectiveAddress >= 0 && pendingEffectiveAddress <= 5)) {
+        if (!!ignoreReserved && !allowIndexingInEA && (pendingEffectiveAddress >= 0 && pendingEffectiveAddress <= 5)) {
             throw new IllegalArgumentException(
                     "Illegal memory register access at effective address " + pendingEffectiveAddress);
         }
@@ -320,7 +333,6 @@ public class CPU implements AutoCloseable {
 
         boolean allowIndexingInEA = !(opcode == 041 || opcode == 042);
         if (ix != 0 && allowIndexingInEA) {
-            System.out.println("IX ALLOWED");
             if (ix < 1 || ix > 3) {
                 throw new IllegalArgumentException("Bad index register in instruction");
             }
@@ -334,12 +346,12 @@ public class CPU implements AutoCloseable {
         if (i == 1) {
             // check bounds before reading
             try {
-                getIsValidAddress(running, pendingEffectiveAddress);
+                getIsValidAddress(running, allowIndexingInEA, pendingEffectiveAddress);
                 memory.readMemory(pendingEffectiveAddress);
                 pendingEffectiveAddress = memory.readMBR() & 0x7FF;
             } catch (Exception e) {
-                System.out.println("STOPPED AT I = 1");
-                System.out.println(pendingEffectiveAddress);
+                System.out.printf("EA debug: instr=LDR r=%d x=%d i=%d a6=%o ix=%o -> EA=%o%n",
+                        r, ix, i, IR & 0x1F, (ix == 0 ? 0 : IXR[ix]), pendingEffectiveAddress &= 0x7FF);
                 throw e;
             }
         }
@@ -347,14 +359,17 @@ public class CPU implements AutoCloseable {
         // check returned address if indirect or if calculated based on index register
         // above
         try {
-            getIsValidAddress(running, pendingEffectiveAddress);
+            getIsValidAddress(running, allowIndexingInEA, pendingEffectiveAddress);
         } catch (Exception e) {
-            System.out.println("STOPPED AT RETURNED ADDRESS");
-            System.out.println(pendingEffectiveAddress);
+            System.out.printf("EA debug: instr=LDR r=%d x=%d i=%d a6=%o ix=%o -> EA=%o%n",
+                    r, ix, i, IR & 0x1F, (ix == 0 ? 0 : IXR[ix]), pendingEffectiveAddress &= 0x7FF);
+
             throw e;
         }
 
-        int[] result = { ix, r, i, pendingEffectiveAddress };
+        int[] result = { ix, r, i, pendingEffectiveAddress &= 0x7FF };
+        System.out.printf("EA debug: instr=LDR r=%d x=%d i=%d a6=%o ix=%o -> EA=%o%n",
+                r, ix, i, IR & 0x1F, (ix == 0 ? 0 : IXR[ix]), pendingEffectiveAddress &= 0x7FF);
         return result;
 
     }
@@ -415,6 +430,7 @@ public class CPU implements AutoCloseable {
                 // LDR
                 case 01: {
                     System.out.println("LDR");
+                    System.out.printf("Before LDR: IXR[1]=%o IXR[2]=%o IXR[3]=%o%n", IXR[1], IXR[2], IXR[3]);
                     try {
                         this.setEffectiveAddress(opcode);
                         // Read from cache (which will load the block on miss)
@@ -1043,9 +1059,7 @@ public class CPU implements AutoCloseable {
                                 "IN: devid must be 0 (keyboard), 2 (card reader), or 3-31 (misc)");
                     }
                     if (devid == 0) {
-                        this.bus.post(new MessageChanged(
-                                "Please enter 20 space-separated integers (Example: 10 20 30...) in the console input field, then press Submit."));
-                        inputBaseAddr = (this.memory.MAR != null ? this.memory.MAR : 100);
+                        inputBaseAddr = GPR[r] & 0x7FF;   // word address in 0..2047
                         waitingInDestReg = r;
                         waitingForConsoleInput = true;
 
@@ -1060,8 +1074,8 @@ public class CPU implements AutoCloseable {
                 }
                 case 062: { // OUT r, devid
                     try {
-                        int r = (IR >> 8) & 0x03; // bits [9..8]
-                        int devid = IR & 0x1F;
+                        int r = (IR >> 8) & 0x03; // [9..8] OK
+                        int devid = (IR >> 3) & 0x1F; // [7..3] ✅
                         int value = GPR[r] & 0xFFFF;
                         if ((r < 0 || r > 3)) {
                             throw new IllegalArgumentException("OUT: r must be 0, 1, 2, 3.");
@@ -1070,8 +1084,19 @@ public class CPU implements AutoCloseable {
                         if ((devid < 0 || (devid < 3 && devid != 1) || devid > 31)) {
                             throw new IllegalArgumentException("OUT:s devid must be 1 (printer) or 3-31 (misc)");
                         }
-                        this.bus.post(new MessageChanged("OUT dbg: r=" + r + " devid=" + devid + " val=" + value));
-                        System.out.println("OUT dbg: r=" + r + " devid=" + devid + " val=" + value);
+                        if (devid == 1) { // console / guidance
+                            int base = GPR[0] & 0x7FF; // base address lives in R0
+                            int count = GPR[3] & 0xFFFF; // count lives in R3
+                            if (count <= 0)
+                                count = 20; // default if unset
+                            this.bus.post(new MessageChanged(String.format(
+                                    "Enter %d numbers (decimal). They will be stored at %04o..%04o.",
+                                    count, base, (base + count - 1) & 0x7FF)));
+                        } else {
+                            this.bus.post(new MessageChanged("OUT dbg: r=" + r + " devid=" + devid + " val=" + value));
+                            System.out.println("OUT dbg: r=" + r + " devid=" + devid + " val=" + value);
+                        }
+
                     } catch (Exception e) {
                         bus.post(new MessageChanged("OUT failed: " + e.getMessage()));
                         halt();
@@ -1092,7 +1117,6 @@ public class CPU implements AutoCloseable {
      * Halts execution of running program.
      */
     public void halt() {
-        System.out.println("HALTED");
         running = false;
         this.cpuTick.stop();
     }
@@ -1107,7 +1131,7 @@ public class CPU implements AutoCloseable {
 
         // we apply timer of 2000 seconds here to allow user to properly see interface
         // update.
-        this.cpuTick = new Timer(2000, e -> {
+        this.cpuTick = new Timer(500, e -> {
 
             step();
             if (!running) {
