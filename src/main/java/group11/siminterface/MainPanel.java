@@ -216,6 +216,7 @@ public class MainPanel implements AutoCloseable {
         programInputs.add(this.IRField.buildInput());
         programInputs.add(Box.createVerticalStrut(2));
         programInputs.add(Box.createHorizontalStrut(10));
+        firstRow.add(programInputs);
 
         // cache field
         JPanel cachePanel = new JPanel();
@@ -312,6 +313,7 @@ public class MainPanel implements AutoCloseable {
         inputPanel.add(new JLabel("Console Input"), BorderLayout.NORTH);
         inputPanel.add(this.consoleInput);
         ActionButton consoleInputButton = new ActionButton("Submit", ()->{
+               cpu.submitConsoleInput(this.consoleInput.getText());
         });
         inputPanel.add(consoleInputButton, BorderLayout.EAST);
         fourthRow.add(inputPanel);
@@ -356,6 +358,10 @@ public class MainPanel implements AutoCloseable {
         }
          try {
             messageChangedSub.close();
+        } catch (Exception ignored) {
+        }
+         try {
+            cacheChangedSub.close();
         } catch (Exception ignored) {
         }
     }

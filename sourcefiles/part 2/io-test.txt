@@ -1,0 +1,4 @@
+LOC 6
+OUT 0,1      ; print guidance
+IN 1,0       ; IN R1,0 waits for user to type numbers and press Submit, then stores them
+HLT

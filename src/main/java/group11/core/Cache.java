@@ -27,7 +27,7 @@ public class Cache {
         this.memory= memory;
         this.eventBus = eventBus;
         CacheLine [] cacheLines = new CacheLine[CACHE_LINES];
-        Arrays.fill(cacheLines, new CacheLine());
+        for (int i = 0; i < CACHE_LINES ; i++) cacheLines[i] = new CacheLine();
         this.queue = new LinkedList<>(Arrays.asList(cacheLines));
         this.dumpSummary();
     }
@@ -99,7 +99,6 @@ public class Cache {
         ln.tag = tag;
         ln.valid = true;
         this.queue.addLast(ln); // becomes newest in FIFO
-      
     }
 
     // -------------------- Optional: debug --------------------

@@ -18,6 +18,8 @@ import group11.events.SetMBR;
 import group11.events.SetPC;
 import javax.swing.Timer;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.InputMismatchException;
 
 // assisted by chatgpt
 public class CPU implements AutoCloseable {
@@ -52,6 +54,13 @@ public class CPU implements AutoCloseable {
     public int I;
     public int opcode;
     public String message;
+
+    // --- Console input coordination (non-blocking wait) ---
+    private volatile boolean waitingForConsoleInput = false;
+    private int waitingInDestReg = -1;
+    private Integer inputBaseAddr = null;
+
+    public Timer cpuTick;
     public boolean[] CC = new boolean[4]; // CC[0]=OVERFLOW, CC[1]=UNDERFLOW, CC[2]=DIVZERO, CC[3]=EQUALORNOT
     private int carry = 0; // 0 or 1
 
@@ -77,6 +86,54 @@ public class CPU implements AutoCloseable {
         this.SetPCSub = bus.subscribe(SetPC.class, cmd -> {
             this.PC = cmd.value();
         });
+    }
+
+    // https://chatgpt.com/share/69041255-bacc-8007-a578-4898db192eb6
+    public void submitConsoleInput(String line) {
+        if (!waitingForConsoleInput) {
+            bus.post(new MessageChanged("No IN pending; submit ignored."));
+            return;
+        }
+        waitingForConsoleInput = false;
+        int r = waitingInDestReg;
+        waitingInDestReg = -1;
+
+        int value = 0;
+        try {
+            if (line == null || line.trim().isEmpty()) {
+                value = 0;
+            } else {
+                String[] parts = line.split("\\s+");
+                System.out.println("PARTS");
+                System.out.println(Arrays.toString(parts));
+                int[] numbers = new int[Math.min(parts.length, 2048)];
+
+                for (int i = 0; i < numbers.length; i++) {
+                    numbers[i] = Integer.parseInt(parts[i]);
+                    try {
+                        int parsedInt = Integer.parseInt(parts[i]);
+                        numbers[i] = parsedInt;
+                        memory.writeMemoryDirect(inputBaseAddr + i, numbers[i]);
+                        cache.store(inputBaseAddr + i, numbers[i]);
+                    } catch (NumberFormatException e) {
+                        throw new InputMismatchException("Input from IN includes invalid integers.");
+                    }
+                }
+                System.out.println("NUMBERS");
+                System.out.println(Arrays.toString(numbers));
+                value = numbers[0];
+            }
+            GPR[r] = value;
+            bus.post(new GPRChanged(r, GPR[r]));
+            bus.post(new MessageChanged("Input accepted."));
+        } catch (Exception e) {
+            bus.post(new MessageChanged("IN failed: " + e.getMessage()));
+            halt();
+        } finally {
+            waitingInDestReg = -1;
+            waitingForConsoleInput = false;
+            cpuTick.start();
+        }
     }
 
     /**
@@ -136,9 +193,7 @@ public class CPU implements AutoCloseable {
      * instructions one at a time
      */
     public void step() {
-        int instrCount = completedInstructions + 1;
-        this.bus.post(new MessageChanged("Executing instruction " + instrCount + ". "
-                + "PC: " + this.PC));
+        System.out.println("STEP");
         fetch();
         decodeAndExecute();
         this.completedInstructions++;
@@ -202,7 +257,7 @@ public class CPU implements AutoCloseable {
         this.bus.post(new MARChanged(this.memory.MAR));
         this.bus.post(new MBRChanged(this.memory.MBR));
         IXR[IX] = value;
-        this.bus.post(new IXRChanged(R, IXR[IX]));
+        this.bus.post(new IXRChanged(IX, IXR[IX]));
     }
 
     /**
@@ -258,15 +313,18 @@ public class CPU implements AutoCloseable {
 
     private int[] calculateEffectiveAddress(int opcode) {
         int pendingEffectiveAddress = 0;
-        int ix = (IR >> 8) & 0x03; // [9..8] IX (2 bits)
-        int r = (IR >> 6) & 0x03; // [7..6] R (2 bits)
+        int r = (IR >> 8) & 0x03; // [9..8] R
+        int ix = (IR >> 6) & 0x03; // [7..6] X
         int i = (IR >> 5) & 0x01; // [5] I
         pendingEffectiveAddress = IR & 0x1F;
-        if (ix != 0) {
+
+        boolean allowIndexingInEA = !(opcode == 041 || opcode == 042);
+        if (ix != 0 && allowIndexingInEA) {
+            System.out.println("IX ALLOWED");
             if (ix < 1 || ix > 3) {
                 throw new IllegalArgumentException("Bad index register in instruction");
             }
-            pendingEffectiveAddress += IXR[ix];
+            pendingEffectiveAddress += (IXR[ix] & 0x7FF);
         }
 
         if (r < 0 || r > 3) {
@@ -278,8 +336,10 @@ public class CPU implements AutoCloseable {
             try {
                 getIsValidAddress(running, pendingEffectiveAddress);
                 memory.readMemory(pendingEffectiveAddress);
-                pendingEffectiveAddress = memory.readMBR();
+                pendingEffectiveAddress = memory.readMBR() & 0x7FF;
             } catch (Exception e) {
+                System.out.println("STOPPED AT I = 1");
+                System.out.println(pendingEffectiveAddress);
                 throw e;
             }
         }
@@ -289,6 +349,8 @@ public class CPU implements AutoCloseable {
         try {
             getIsValidAddress(running, pendingEffectiveAddress);
         } catch (Exception e) {
+            System.out.println("STOPPED AT RETURNED ADDRESS");
+            System.out.println(pendingEffectiveAddress);
             throw e;
         }
 
@@ -319,16 +381,16 @@ public class CPU implements AutoCloseable {
         return (ir >> 8) & 0x03;
     }
 
-    private int srFieldAL(int ir) {
-        return (ir >> 7) & 0x01;
-    }
+    private int srFieldCount(int ir) {
+        return (ir >> 4) & 0x1F;
+    } // 5 bits
 
     private int srFieldLR(int ir) {
-        return (ir >> 6) & 0x01;
+        return (ir >> 3) & 0x01;
     }
 
-    private int srFieldCount(int ir) {
-        return (ir >> 2) & 0x0F;
+    private int srFieldAL(int ir) {
+        return (ir >> 2) & 0x01;
     }
 
     private int getCarry() {
@@ -352,6 +414,7 @@ public class CPU implements AutoCloseable {
             switch (opcode) {
                 // LDR
                 case 01: {
+                    System.out.println("LDR");
                     try {
                         this.setEffectiveAddress(opcode);
                         // Read from cache (which will load the block on miss)
@@ -367,7 +430,7 @@ public class CPU implements AutoCloseable {
                         // memory.readMemory(effectiveAddress);
                         // this.bus.post(new MARChanged(this.memory.MAR));
                         // this.bus.post(new MBRChanged(this.memory.MBR));
-                        GPR[R] = memory.readMBR();
+                        GPR[R] = word;
                         this.bus.post(new GPRChanged(R, GPR[R]));
                     } catch (Exception e) {
                         System.out.println(e.getMessage());
@@ -378,6 +441,7 @@ public class CPU implements AutoCloseable {
                 }
                 // STR
                 case 02: {
+                    System.out.println("STR");
                     try {
                         this.setEffectiveAddress(opcode);
                         // Update cache
@@ -398,6 +462,7 @@ public class CPU implements AutoCloseable {
                 }
                 // LDA
                 case 03: {
+                    System.out.println("LDA");
                     try {
                         int[] addressInfo = this.calculateEffectiveAddress(opcode);
                         GPR[addressInfo[1]] = addressInfo[3];
@@ -413,6 +478,7 @@ public class CPU implements AutoCloseable {
                 }
                 // LDX x, address[,I]
                 case 041: {
+                    System.out.println("LDX");
                     try {
                         this.setEffectiveAddress(opcode);
                         loadIndexRegister();
@@ -425,6 +491,7 @@ public class CPU implements AutoCloseable {
                 }
                 // STX x, address[,I]
                 case 042: {
+                    System.out.println("STX");
                     try {
                         this.setEffectiveAddress(opcode);
                         storeIndexRegister();
@@ -482,8 +549,8 @@ public class CPU implements AutoCloseable {
                 }
                 case 06: { // AIR r, immed
                     try {
-                        int r = (IR >> 6) & 0x03;
-                        int immed = IR & 0x3F; // lower 6 bits (adjust depending on ISA spec)
+                        int r = (IR >> 8) & 0x03; // R at bits 9..8
+                        int immed = IR & 0x1F;
 
                         if (r < 0 || r > 3) {
                             throw new Exception("Bad register number at AIR instruction");
@@ -511,8 +578,8 @@ public class CPU implements AutoCloseable {
 
                 case 07: { // SIR r, immed
                     try {
-                        int r = (IR >> 6) & 0x03;
-                        int immed = IR & 0x3F; // lower 6 bits
+                        int r = (IR >> 8) & 0x03; // R at bits 9..8
+                        int immed = IR & 0x1F;
 
                         if (r < 0 || r > 3) {
                             throw new Exception("Bad register number at SIR instruction");
@@ -838,8 +905,8 @@ public class CPU implements AutoCloseable {
                 }
                 case 070: { // MLT rx, ry
                     try {
-                        int ry = (IR >> 8) & 0x03;
-                        int rx = (IR >> 6) & 0x03;
+                        int rx = (IR >> 8) & 0x03;
+                        int ry = (IR >> 6) & 0x03;
 
                         if ((rx != 0 && rx != 2) || (ry != 0 && ry != 2)) {
                             throw new IllegalArgumentException("MLT: rx and ry must be 0 or 2.");
@@ -867,8 +934,8 @@ public class CPU implements AutoCloseable {
 
                 case 071: { // DVD rx, ry
                     try {
-                        int ry = (IR >> 8) & 0x03;
-                        int rx = (IR >> 6) & 0x03;
+                        int rx = (IR >> 8) & 0x03;
+                        int ry = (IR >> 6) & 0x03;
 
                         if ((rx != 0 && rx != 2) || (ry != 0 && ry != 2)) {
                             throw new IllegalArgumentException("DVD: rx and ry must be 0 or 2.");
@@ -895,8 +962,8 @@ public class CPU implements AutoCloseable {
 
                 case 072: { // TRR rx, ry
                     try {
-                        int ry = (IR >> 8) & 0x03;
-                        int rx = (IR >> 6) & 0x03;
+                        int rx = (IR >> 8) & 0x03;
+                        int ry = (IR >> 6) & 0x03;
                         if ((rx < 0 || rx > 3) || (ry < 0 && ry > 3)) {
                             throw new IllegalArgumentException("TRR: rx and ry must be 0, 1, 2, 3.");
                         }
@@ -918,8 +985,9 @@ public class CPU implements AutoCloseable {
 
                 case 073: { // AND rx, ry
                     try {
-                        int ry = (IR >> 8) & 0x03;
-                        int rx = (IR >> 6) & 0x03;
+                        int rx = (IR >> 8) & 0x03;
+                        int ry = (IR >> 6) & 0x03;
+                        ;
                         GPR[rx] = (GPR[rx] & GPR[ry]) & 0xFFFF;
                         bus.post(new GPRChanged(rx, GPR[rx]));
                         bus.post(new MessageChanged("AND executed: R" + rx + " = " + GPR[rx] + " (& R" + ry + ")"));
@@ -932,8 +1000,8 @@ public class CPU implements AutoCloseable {
 
                 case 074: { // ORR rx, ry
                     try {
-                        int ry = (IR >> 8) & 0x03;
-                        int rx = (IR >> 6) & 0x03;
+                        int rx = (IR >> 8) & 0x03;
+                        int ry = (IR >> 6) & 0x03;
                         if ((rx < 0 || rx > 3) || (ry < 0 && ry > 3)) {
                             throw new IllegalArgumentException("ORR: rx and ry must be 0, 1, 2, 3.");
                         }
@@ -949,7 +1017,7 @@ public class CPU implements AutoCloseable {
 
                 case 075: { // NOT rx
                     try {
-                        int rx = (IR >> 6) & 0x03;
+                        int rx = (IR >> 8) & 0x03;
                         if ((rx < 0 || rx > 3)) {
                             throw new IllegalArgumentException("NOT: rx must be 0, 1, 2, 3.");
                         }
@@ -964,39 +1032,46 @@ public class CPU implements AutoCloseable {
                 }
 
                 case 061: { // IN r, devid
-                    try {
-                        int r = (IR >> 6) & 0x03;
-                        int devid = (IR >> 8) & 0x1F;
+
+                    int r = (IR >> 8) & 0x03;
+                    int devid = (IR >> 3) & 0x1F;
+                    if ((r < 0 || r > 3)) {
+                        throw new IllegalArgumentException("IN: r must be 0, 1, 2, 3.");
+                    }
+                    if ((devid < 0 || devid == 1 || devid > 31)) {
+                        throw new IllegalArgumentException(
+                                "IN: devid must be 0 (keyboard), 2 (card reader), or 3-31 (misc)");
+                    }
+                    if (devid == 0) {
+                        this.bus.post(new MessageChanged(
+                                "Please enter 20 space-separated integers (Example: 10 20 30...) in the console input field, then press Submit."));
+                        inputBaseAddr = (this.memory.MAR != null ? this.memory.MAR : 100);
+                        waitingInDestReg = r;
+                        waitingForConsoleInput = true;
+
+                        cpuTick.stop();
+                    } else {
+                        // your existing device path (if any)
                         int value = 0;
-                        if ((r < 0 || r > 3)) {
-                            throw new IllegalArgumentException("IN: r must be 0, 1, 2, 3.");
-                        }
-                        if ((devid < 0 || devid == 1 || devid > 31)) {
-                            throw new IllegalArgumentException(
-                                    "IN: devid must be 0 (keyboard), 2 (card reader), or 3-31 (misc)");
-                        }
                         GPR[r] = value & 0xFFFF;
                         bus.post(new GPRChanged(r, GPR[r]));
-                        bus.post(new MessageChanged("IN executed: R" + r + " <- device[" + devid + "] (stubbed=0)"));
-                    } catch (Exception e) {
-                        bus.post(new MessageChanged("IN failed: " + e.getMessage()));
-                        halt();
                     }
                     break;
                 }
                 case 062: { // OUT r, devid
                     try {
-                        int r = (IR >> 6) & 0x03;
-                        int devid = (IR >> 8) & 0x1F;
+                        int r = (IR >> 8) & 0x03; // bits [9..8]
+                        int devid = IR & 0x1F;
                         int value = GPR[r] & 0xFFFF;
                         if ((r < 0 || r > 3)) {
                             throw new IllegalArgumentException("OUT: r must be 0, 1, 2, 3.");
                         }
+
                         if ((devid < 0 || (devid < 3 && devid != 1) || devid > 31)) {
-                            throw new IllegalArgumentException("OUT: devid must be 1 (printer) or 3-31 (misc)");
+                            throw new IllegalArgumentException("OUT:s devid must be 1 (printer) or 3-31 (misc)");
                         }
-                        bus.post(new MessageChanged(
-                                "OUT executed: device[" + devid + "] <- R" + r + " (" + value + ")"));
+                        this.bus.post(new MessageChanged("OUT dbg: r=" + r + " devid=" + devid + " val=" + value));
+                        System.out.println("OUT dbg: r=" + r + " devid=" + devid + " val=" + value);
                     } catch (Exception e) {
                         bus.post(new MessageChanged("OUT failed: " + e.getMessage()));
                         halt();
@@ -1005,7 +1080,7 @@ public class CPU implements AutoCloseable {
                 }
 
                 default: {
-                    System.out.println("Unknown opcode. May be data: " + opcode);
+                    bus.post(new MessageChanged("Unknown opcode. May be data: " + opcode));
                     break;
                 }
             }
@@ -1017,7 +1092,9 @@ public class CPU implements AutoCloseable {
      * Halts execution of running program.
      */
     public void halt() {
+        System.out.println("HALTED");
         running = false;
+        this.cpuTick.stop();
     }
 
     // https://stackoverflow.com/questions/28432164/java-swing-timer-loop
@@ -1030,16 +1107,16 @@ public class CPU implements AutoCloseable {
 
         // we apply timer of 2000 seconds here to allow user to properly see interface
         // update.
-        Timer cpuTick = new Timer(2000, e -> {
+        this.cpuTick = new Timer(2000, e -> {
 
             step();
-            if (!running || pendingInstructions == completedInstructions) {
+            if (!running) {
                 ((javax.swing.Timer) e.getSource()).stop();
                 return;
             }
         });
-        cpuTick.setInitialDelay(0);
-        cpuTick.start();
+        this.cpuTick.setInitialDelay(0);
+        this.cpuTick.start();
     }
 
     /**

@@ -1,0 +1,21 @@
+LOC 6
+LDA 0,0,300        ; 1) Seed R0=300 and stash it in a safe small cell R0 = 300
+STR 0,0,20         ; [20] = 300        (safe small address)
+LDX 1,20           ; (Option A) Touch M[300] BEFORE IN to set MAR=300 (if IN uses MAR as base) X1 = [20] = 300
+LDR 3,1,0          ; R3 <- M[X1] (=M[300]); sets MAR=300
+OUT 0,1            ; guidance
+IN  0,0            ; read 20 ints (either uses MAR=300 or R0=300, depending on your IN)
+LDX 1,20           ; re-seed X1=300 after IN, just in case
+LDR 0,0,20         ; RE-SEED X1 AFTER IN (defensive against any side effects in IN) R0 = [20] = 300
+STR 0,0,20         ; (no-op logically; keeps [20] = 300)
+LDX 1,20           ; X1 = 300
+LDA 2,0,20         ;  Print loop (20 elements starting at X1)R2 = 20. loop @ next line:
+LDR 3,1,0          ; R3 <- M[X1]
+OUT 3,1            ; print
+STX 1,20           ; [20] <- X1
+LDR 0,0,20         ; R0 <- [20]
+AIR 0,1            ; R0++
+STR 0,0,20         ; [20] <- R0
+LDX 1,20           ; X1 <- [20]
+SOB 2,0,17        ; jump back 7 instructions to LDR 3,1,0  (replace -7 with your assembler’s absolute target)
+HLT

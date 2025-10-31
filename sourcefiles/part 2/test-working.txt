@@ -1,0 +1,13 @@
+LOC 6
+LDA 0,0,300
+STR 0,0,20         ; [20] = 300
+LDX 1,20           ; X1 = 300
+LDR 3,1,0          ; R3 <- M[300] (expected 0)
+AIR 3,25           ; R3 = 25
+STR 3,0,22         ; [22] <- 25
+LDR 0,0,22         ; R0 <- 25
+LDR 1,0,22         ; R1 <- 25
+OUT 0,1            ; expect 25
+OUT 1,1            ; expect 25
+OUT 3,1            ; expect 25
+HLT

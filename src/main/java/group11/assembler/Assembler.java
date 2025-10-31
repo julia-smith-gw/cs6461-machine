@@ -48,7 +48,7 @@ public class Assembler {
       outputListingFile(conversionResult, instructionLines, converter.hasErrors || resolver.hasErrors);
     } catch (Exception error) {
       System.out.println(error.getMessage());
-      System.out.println(error.getStackTrace());
+      error.printStackTrace(System.out); 
       System.out.println("Critical error occurred while parsing symbols. See stack trace.");
     }
   }
