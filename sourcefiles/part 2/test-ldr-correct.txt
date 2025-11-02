@@ -1,5 +1,0 @@
-LDR 3,1,0        ; R3 <- M[X1]
-STR 3,0,21       ; [21] <- R3
-LDR 0,0,21       ; R0 <- [21]
-OUT 0,1          ; prints what LDR loaded, regardless of OUT r-decoding
-HLT

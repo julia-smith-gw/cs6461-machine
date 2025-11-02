@@ -1,37 +1,37 @@
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/UiCommand.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/assembler/SymbolTable.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/SetMAR.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/PCChanged.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/App.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/core/Memory.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/CacheChanged.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/GPRChanged.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/assembler/AssemblerConverter.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/util/ResourceUtil.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/MessageChanged.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/IRChanged.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/MBRChanged.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/SetMBR.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/assembler/InstructionStringUtil.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/core/Cache.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/assembler/OpcodeInfo.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/assembler/Assembler.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/SetConsoleInput.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/core/CacheLine.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/assembler/OpcodeTable.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/SetPC.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/assembler/AssemblerLabelResolver.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/IXRChanged.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/core/CPU.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/siminterface/OctalInputWithButton.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/CPUEvent.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/MARChanged.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/siminterface/FileInput.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/siminterface/ActionButton.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/EventBus.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/SetIXR.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/core/RomLoader.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/siminterface/BinaryField.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/siminterface/MainPanel.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/assembler/AssemblerConverterResult.java
-/Users/juliasmith/Desktop/CompSciStuff/CS6461/Team 11 Machine Simulator Part 1 CSCI6461Section12Fall2025October182025/computer-simulator/src/main/java/group11/events/SetGPR.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/core/CPU.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/assembler/Assembler.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/assembler/AssemblerLabelResolver.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/EventBus.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/core/Memory.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/GPRChanged.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/SetMBR.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/App.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/core/Cache.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/PCChanged.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/SetGPR.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/MessageChanged.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/assembler/AssemblerConverter.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/assembler/OpcodeTable.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/SetMAR.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/siminterface/MainPanel.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/SetConsoleInput.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/siminterface/OctalInputWithButton.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/IXRChanged.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/siminterface/BinaryField.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/SetIXR.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/MARChanged.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/SetPC.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/siminterface/FileInput.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/core/RomLoader.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/assembler/SymbolTable.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/core/CacheLine.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/CacheChanged.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/assembler/OpcodeInfo.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/assembler/InstructionStringUtil.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/siminterface/ActionButton.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/CPUEvent.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/IRChanged.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/MBRChanged.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/assembler/AssemblerConverterResult.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/util/ResourceUtil.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/UiCommand.java

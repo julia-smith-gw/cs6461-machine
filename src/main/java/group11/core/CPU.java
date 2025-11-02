@@ -18,7 +18,6 @@ import group11.events.SetMBR;
 import group11.events.SetPC;
 import javax.swing.Timer;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.InputMismatchException;
 
 // assisted by chatgpt
@@ -89,6 +88,11 @@ public class CPU implements AutoCloseable {
     }
 
     // https://chatgpt.com/share/69041255-bacc-8007-a578-4898db192eb6
+    /**
+     * Function that takes in and parses console input for numbers.
+     * Continues program execution if program is running
+     * @param line Console input
+     */
     public void submitConsoleInput(String line) {
         if (!waitingForConsoleInput) {
             bus.post(new MessageChanged("No IN pending; submit ignored."));
@@ -97,12 +101,12 @@ public class CPU implements AutoCloseable {
         waitingForConsoleInput = false;
         int r = waitingInDestReg;
         waitingInDestReg = -1;
-
         int value = 0;
         try {
             if (line == null || line.trim().isEmpty()) {
                 value = 0;
             } else {
+                // gets count of numbers to accept from console input
                 int count = GPR[3] & 0xFFFF;
                 if (count <= 0)
                     count = 20; // default
@@ -110,7 +114,7 @@ public class CPU implements AutoCloseable {
                 String normalized = (line == null) ? "" : line.trim();
                 String[] parts = normalized.isEmpty() ? new String[0] : normalized.split("[,\\s]+");
 
-                // How many we will actually consume
+                // How many numbers we will actually consume
                 int n = Math.min(count, parts.length);
 
                 System.out.printf("IN: desired=%d, tokens_seen=%d, writing=%d, base=%04o%n",
@@ -120,6 +124,7 @@ public class CPU implements AutoCloseable {
 
                 System.out.printf("IN: r=%d R[r]=%04o (%d) base=%04o (%d) desired=%d%n",
                         r, GPR[r] & 0x7FF, GPR[r] & 0x7FF, inputBaseAddr, inputBaseAddr, count);
+                // parse numbers and store to memory
                 for (int i = 0; i < count; i++) {
                     numbers[i] = Integer.parseInt(parts[i]);
                     try {
@@ -134,6 +139,8 @@ public class CPU implements AutoCloseable {
                 }
                 value = numbers[0];
             }
+
+            // set register value to first value
             GPR[r] = value;
             bus.post(new GPRChanged(r, GPR[r]));
             bus.post(new MessageChanged("Input accepted."));
@@ -256,6 +263,9 @@ public class CPU implements AutoCloseable {
         }
     }
 
+    /**
+     * Loads value into given index register from memory (cache)
+     */
     public void loadIndexRegister() {
         // EA computed already with setEffectiveAddress(opcode)
         int value = cache.load(effectiveAddress) & 0xFFFF;
@@ -275,6 +285,9 @@ public class CPU implements AutoCloseable {
         System.out.printf("LDX debug: set IXR[%d]=%o from EA=%o%n", IX, IXR[IX], effectiveAddress);
     }
 
+    /**
+     * Stores index register value into cache/memory
+     */
     public void storeIndexRegister() {
         if (IX < 1 || IX > 3) {
             throw new IllegalArgumentException("STX: index register must be 1..3, got " + IX);
@@ -326,6 +339,11 @@ public class CPU implements AutoCloseable {
         I = pendingEffectiveAddressInfo[2];
     }
 
+    /**
+     * Calculates effective address given r, ix, i, opcode.
+     * @param opcode 10 bit number indicating operation
+     * @return int [] array of info about instruction
+     */
     private int[] calculateEffectiveAddress(int opcode) {
         int pendingEffectiveAddress = 0;
         int r = (IR >> 8) & 0x03; // [9..8] R
@@ -350,11 +368,20 @@ public class CPU implements AutoCloseable {
             // check bounds before reading
             try {
                 getIsValidAddress(running, allowIndexingInEA, pendingEffectiveAddress);
-                memory.readMemory(pendingEffectiveAddress);
-                pendingEffectiveAddress = memory.readMBR() & 0x7FF;
+                // Use cache for coherence with LDR/LDX paths
+                int ptrWord = cache.load(pendingEffectiveAddress) & 0xFFFF;
+
+                // Keep MAR/MBR + bus in sync (like LDR path)
+                this.memory.MAR = pendingEffectiveAddress & 0x7FF;
+                this.memory.MBR = ptrWord;
+                this.bus.post(new MARChanged(this.memory.MAR));
+                this.bus.post(new MBRChanged(this.memory.MBR));
+
+                // FINAL EA becomes the pointee
+                pendingEffectiveAddress = ptrWord & 0x7FF;
             } catch (Exception e) {
                 System.out.printf("EA debug: r=%d x=%d i=%d a5=%o ix=%o -> EA=%o%n",
-                        r, ix, i, IR & 0x1F, (ix == 0 ? 0 : IXR[ix]), pendingEffectiveAddress &= 0x7FF);
+                        r, ix, i, IR & 0x1F, (ix == 0 ? 0 : IXR[ix]), pendingEffectiveAddress & 0x7FF);
                 throw e;
             }
         }
@@ -365,14 +392,15 @@ public class CPU implements AutoCloseable {
             getIsValidAddress(running, allowIndexingInEA, pendingEffectiveAddress);
         } catch (Exception e) {
             System.out.printf("EA debug: r=%d x=%d i=%d a5=%o ix=%o -> EA=%o%n",
-                    r, ix, i, IR & 0x1F, (ix == 0 ? 0 : IXR[ix]), pendingEffectiveAddress &= 0x7FF);
+                    r, ix, i, IR & 0x1F, (ix == 0 ? 0 : IXR[ix]), pendingEffectiveAddress & 0x7FF);
 
             throw e;
         }
 
-        int[] result = { ix, r, i, pendingEffectiveAddress &= 0x7FF };
+        int eaMasked = pendingEffectiveAddress & 0x7FF;
+        int[] result = { ix, r, i, eaMasked };
         System.out.printf("EA debug: r=%d x=%d i=%d a5=%o ix=%o -> EA=%o%n",
-                r, ix, i, IR & 0x1F, (ix == 0 ? 0 : IXR[ix]), pendingEffectiveAddress &= 0x7FF);
+                r, ix, i, IR & 0x1F, (ix == 0 ? 0 : IXR[ix] & 0x7FF), eaMasked);
         return result;
 
     }
@@ -420,6 +448,16 @@ public class CPU implements AutoCloseable {
     }
 
     /**
+     * Return true if 16-bit signed subtraction a - b overflows (i.e., "underflow"
+     * for your CC[1]).
+     */
+    private boolean subOverflow16(int a, int b, int diff) {
+        // Overflow iff a and b have different signs, and diff’s sign differs from a’s
+        // sign.
+        return (((a ^ b) & 0x8000) != 0) && (((a ^ diff) & 0x8000) != 0);
+    }
+
+    /**
      * Decodes and executes instruction from file.
      */
     private void decodeAndExecute() {
@@ -436,7 +474,7 @@ public class CPU implements AutoCloseable {
                     System.out.printf("Before LDR: IXR[1]=%o IXR[2]=%o IXR[3]=%o%n", IXR[1], IXR[2], IXR[3]);
                     try {
                         this.setEffectiveAddress(opcode);
-                   System.out.println("LDR effective address R:" + R + " ix: " + IX + " i flag: " + I
+                        System.out.println("LDR effective address R:" + R + " ix: " + IX + " i flag: " + I
                                 + " effective address: " + this.effectiveAddress);
                         // Read from cache (which will load the block on miss)
                         int word = cache.load(effectiveAddress) & 0xFFFF; // ensure 16-bit
@@ -466,7 +504,7 @@ public class CPU implements AutoCloseable {
                     System.out.println("STR exec: IR=" + Integer.toOctalString(IR));
                     try {
                         this.setEffectiveAddress(opcode);
-                   System.out.println("STR effective address R:" + R + " ix: " + IX + " i flag: " + I
+                        System.out.println("STR effective address R:" + R + " ix: " + IX + " i flag: " + I
                                 + " effective address: " + this.effectiveAddress);
                         // Update cache
                         cache.store(effectiveAddress, GPR[R] & 0xFFFF);
@@ -552,9 +590,24 @@ public class CPU implements AutoCloseable {
                         this.bus.post(new MARChanged(this.memory.MAR));
                         this.bus.post(new MBRChanged(this.memory.MBR));
 
-                        // Update register and post events
-                        GPR[R] = (GPR[R] + memValue) & 0xFFFF; // 16-bit register
+                        // --- Signed-overflow detection for 16-bit add (two's complement) ---
+                        int a = GPR[R] & 0xFFFF;
+                        int b = memValue & 0xFFFF;
+                        int sum = (a + b) & 0xFFFF;
+
+                        // https://chatgpt.com/share/6906f0ff-36d8-8007-a4d1-f8dac5a1f999
+                        // Interpret sign bits (bit 15) for two's-complement overflow
+                        boolean sameSignOperands = ((a ^ b) & 0x8000) == 0;
+                        boolean resultSignDiffers = ((a ^ sum) & 0x8000) != 0;
+                        boolean overflow = sameSignOperands && resultSignDiffers;
+
+                        // Update register
+                        GPR[R] = sum;
                         bus.post(new GPRChanged(R, GPR[R]));
+
+                        // --- Condition Codes per ISA ---
+                        CC[0] = overflow; // OVERFLOW
+                        CC[1] = false; // UNDERFLOW (not used for addition)
                         bus.post(new MessageChanged("AMR executed: R" + R + " = " + GPR[R]));
                         System.out.println("AMR executed: R" + R + " = " + GPR[R]);
                     } catch (Exception e) {
@@ -577,12 +630,24 @@ public class CPU implements AutoCloseable {
                         this.memory.MBR = memValue;
                         this.bus.post(new MARChanged(this.memory.MAR));
                         this.bus.post(new MBRChanged(this.memory.MBR));
-                        // Update register and post events
-                        System.out.println("SMR will be executed on value from gpr" +  GPR[R] + " minus memvalue" + memValue );
-                        GPR[R] = (GPR[R] - memValue) & 0xFFFF; // 16-bit register
+                        
+                        // https://chatgpt.com/share/6906f0ff-36d8-8007-a4d1-f8dac5a1f999
+                        // --- Signed-underflow detection for 16-bit add (two's complement) ---
+                        int a = GPR[R] & 0xFFFF;
+                        int b = memValue & 0xFFFF;
+
+                        int diff = (a - b) & 0xFFFF;
+
+                        boolean underflow = subOverflow16(a, b, diff);
+
+                        GPR[R] = diff;
                         bus.post(new GPRChanged(R, GPR[R]));
+
+                        // CC: mark UNDERFLOW for subtract; clear OVERFLOW (reserved for add)
+                        CC[0] = false; // OVERFLOW (for addition)
+                        CC[1] = underflow; // UNDERFLOW (for subtraction
                         bus.post(new MessageChanged("SMR executed: R" + R + " = " + GPR[R]));
-                        System.out.println("SMR executed: R" + R + " = " + GPR[R] );
+                        System.out.println("SMR executed: R" + R + " = " + GPR[R]);
                     } catch (Exception e) {
                         bus.post(new MessageChanged("SMR failed: " + e.getMessage()));
                         halt();
@@ -636,13 +701,17 @@ public class CPU implements AutoCloseable {
                             break;
                         }
 
-                 
-                        if (GPR[r] == 0) {
-                            GPR[r] = (-imm5) & 0xFFFF;
-                        } else {
-                            GPR[r] = (GPR[r] - imm5) & 0xFFFF;
-                        }
+                        int a = GPR[r] & 0xFFFF;
+                        int b = imm5 & 0xFFFF;
+
+                        int diff = (a - b) & 0xFFFF;
+                        boolean underflow = subOverflow16(a, b, diff);
+
+                        GPR[r] = diff;
                         bus.post(new GPRChanged(r, GPR[r]));
+
+                        CC[0] = false; // OVERFLOW (for add)
+                        CC[1] = underflow; // UNDERFLOW (for subtract)
                         bus.post(new MessageChanged("SIR executed: R" + r + " = " + GPR[r]));
                     } catch (Exception e) {
                         bus.post(new MessageChanged("SIR failed: " + e.getMessage()));
@@ -653,15 +722,20 @@ public class CPU implements AutoCloseable {
                 // written with gpt assistance
                 case 010: { // JZ r,x,address[,I]
                     try {
+                        System.out.println("JZ execute");
                         this.setEffectiveAddress(opcode);
+                        System.out.println("JZ effective address R:" + R + " ix: " + IX + " i flag: " + I
+                                + " effective address: " + this.effectiveAddress);
                         boolean isZero = (GPR[R] & 0xFFFF) == 0;
                         CC[3] = isZero; // EQUAL flag reflects result
 
                         if (isZero) {
                             this.PC = this.effectiveAddress;
                             bus.post(new MessageChanged("JZ taken: R" + R + "=0 → PC=" + this.PC));
+                            System.out.println("JZ taken: R" + R + "=0 → PC=" + this.PC);
                         } else {
                             bus.post(new MessageChanged("JZ not taken: R" + R + "=" + GPR[R]));
+                            System.out.println("JZ not taken: R" + R + "=" + GPR[R]);
                         }
                     } catch (Exception e) {
                         bus.post(new MessageChanged("JZ failed: " + e.getMessage()));
@@ -754,9 +828,9 @@ public class CPU implements AutoCloseable {
                 }
 
                 case 016: { // SOB r,x,address[,I]
-                     System.out.println("SOB exec: IR=" + Integer.toOctalString(IR));
+                    System.out.println("SOB exec: IR=" + Integer.toOctalString(IR));
                     try {
-                                                System.out.println("SOB effective address R:" + R + " ix: " + IX + " i flag: " + I
+                        System.out.println("SOB effective address R:" + R + " ix: " + IX + " i flag: " + I
                                 + " effective address: " + this.effectiveAddress);
                         this.setEffectiveAddress(opcode);
                         int before = GPR[R];
@@ -771,10 +845,10 @@ public class CPU implements AutoCloseable {
                             this.PC = this.effectiveAddress;
                             bus.post(new MessageChanged(
                                     "SOB taken: R" + R + " " + before + "→" + after + ", PC=" + this.PC));
-                                    System.out.println("SOB taken: R" + R + " " + before + "→" + after + ", PC=" + this.PC);
+                            System.out.println("SOB taken: R" + R + " " + before + "→" + after + ", PC=" + this.PC);
                         } else {
                             bus.post(new MessageChanged("SOB not taken: R" + R + " " + before + "→" + after));
-                               System.out.println("SOB not taken: R" + R + " " + before + "→" + after);
+                            System.out.println("SOB not taken: R" + R + " " + before + "→" + after);
                         }
                     } catch (Exception e) {
                         bus.post(new MessageChanged("SOB failed: " + e.getMessage()));
@@ -877,9 +951,9 @@ public class CPU implements AutoCloseable {
                         bus.post(new GPRChanged(r, GPR[r]));
                         bus.post(new MessageChanged(
                                 "SRC executed: R" + r + " = " + GPR[r]) +
-                                        " (count=" + count + ", " + (lr == 1 ? "L" : "R") + ")");
-                        System.out.println( "SRC executed: R" + r + " = " +  GPR[r] +
-                                        " (count=" + count + ", " + (lr == 1 ? "L" : "R") + ")");
+                                " (count=" + count + ", " + (lr == 1 ? "L" : "R") + ")");
+                        System.out.println("SRC executed: R" + r + " = " + GPR[r] +
+                                " (count=" + count + ", " + (lr == 1 ? "L" : "R") + ")");
                     } catch (Exception e) {
                         bus.post(new MessageChanged("SRC failed: " + e.getMessage()));
                         halt();
@@ -1091,7 +1165,7 @@ public class CPU implements AutoCloseable {
 
                 case 061: { // IN r, devid
                     System.out.println("AWAITING IN");
-                    int r = (IR >> 8) & 0x03;   
+                    int r = (IR >> 8) & 0x03;
                     int devid = (IR >> 3) & 0x1F;
                     if ((r < 0 || r > 3)) {
                         throw new IllegalArgumentException("IN: r must be 0, 1, 2, 3.");
@@ -1105,10 +1179,10 @@ public class CPU implements AutoCloseable {
                         waitingInDestReg = r;
                         waitingForConsoleInput = true;
 
-                    if (running) {
-                        cpuTick.stop();
-                    }
-                 
+                        if (running) {
+                            cpuTick.stop();
+                        }
+
                     } else {
                         // your existing device path (if any)
                         int value = 0;
@@ -1168,9 +1242,10 @@ public class CPU implements AutoCloseable {
     public void halt() {
         running = false;
         if (this.cpuTick != null) {
-        this.cpuTick.stop();
+            this.cpuTick.stop();
         }
-        System.out.println(" mem output, 0020: " + memory.memory[0020]+ " 0021: " + memory.memory[0021]+ " 0022: "+ memory.memory[0022] + " 0023: " +memory.memory[0023]);
+        System.out.println(" mem output, 0020: " + memory.memory[0020] + " 0021: " + memory.memory[0021] + " 0022: "
+                + memory.memory[0022] + " 0023: " + memory.memory[0023]);
         System.out.println("program halted");
         bus.post(new MessageChanged("Program halted"));
     }

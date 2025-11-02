@@ -30,7 +30,7 @@ public class App
             SwingUtilities.invokeLater(() -> {
                 Path defaultRom = null;
             try {
-                defaultRom = ResourceUtil.extractResourceToTemp("/test-files/load-file-nominal.txt", "rom-", ".txt");
+                defaultRom = ResourceUtil.extractResourceToTemp("/test-files/load-file-program-1.txt", "rom-", ".txt");
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -43,7 +43,7 @@ public class App
             f.setVisible(true);
         });
 
-        Assembler assembler = new Assembler();
-        assembler.assemble();
+        // Assembler assembler = new Assembler();
+        // assembler.assemble();
     }
 }

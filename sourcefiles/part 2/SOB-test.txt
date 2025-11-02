@@ -1,6 +1,0 @@
-       LOC 6
-       LDA 1,0,ZERO
-       AIR 1,2       ; R1 = 2
-       SOB 1,0,RLOOP ; loops twice to PC=6 if A==6 low5
-ZERO:  DATA 0
-RLOOP: HLT
