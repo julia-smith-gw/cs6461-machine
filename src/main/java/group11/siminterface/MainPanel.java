@@ -3,6 +3,7 @@ package group11.siminterface;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import group11.core.CPU;
+import group11.events.CChanged;
 import group11.events.CacheChanged;
 import group11.events.EventBus;
 import group11.events.GPRChanged;
@@ -17,6 +18,8 @@ import group11.events.SetIXR;
 import group11.events.SetMAR;
 import group11.events.SetMBR;
 import group11.events.SetPC;
+import group11.siminterface.OctalInputWithButton.OctalTextField;
+
 import java.nio.file.Path;
 
 import java.awt.*;
@@ -38,6 +41,7 @@ public class MainPanel implements AutoCloseable {
     private final AutoCloseable IRChangedSub;
     private final AutoCloseable messageChangedSub;
     private final AutoCloseable cacheChangedSub;
+    private final AutoCloseable CChangedSub;
 
     public OctalInputWithButton MBRField;
     public OctalInputWithButton MARField;
@@ -55,6 +59,7 @@ public class MainPanel implements AutoCloseable {
     public JTextArea messageField;
     public JTextArea cacheField;
     public JTextField consoleInput;
+    public JTextField ccCodeField;
 
    public MainPanel(EventBus bus) {
         this.bus = bus;
@@ -110,6 +115,9 @@ public class MainPanel implements AutoCloseable {
         });
         this.cacheChangedSub = bus.subscribe(CacheChanged.class, cmd ->{
             this.cacheField.setText(cmd.cacheContent());
+        });
+        this.CChangedSub = bus.subscribe(CChanged.class, cmd->{
+            this.ccCodeField.setText(cmd.ccContent());
         });
     }
 
@@ -223,6 +231,7 @@ public class MainPanel implements AutoCloseable {
         cachePanel.setBorder(new EmptyBorder(12, 12, 12, 12));
         cachePanel.setLayout(new BoxLayout(cachePanel, BoxLayout.Y_AXIS));
         this.cacheField = new JTextArea(10, 20);
+        this.cacheField.setEditable(false);
         cachePanel.add(new JLabel("Cache Content"));
         cachePanel.add(this.cacheField);
         firstRow.add(cachePanel);
@@ -275,8 +284,17 @@ public class MainPanel implements AutoCloseable {
         JPanel errorCodes = new JPanel();
         errorCodes.setBorder(new EmptyBorder(12, 12, 12, 12));
         errorCodes.setLayout(new BoxLayout(errorCodes, BoxLayout.Y_AXIS));
-        errorCodes.add(new OctalInputWithButton("CC", false, false, () -> {
-        }).buildInput());
+
+        JPanel ccCodeLabelAndInput = new JPanel();
+        ccCodeLabelAndInput.setLayout(new BoxLayout(ccCodeLabelAndInput, BoxLayout.X_AXIS));
+        this.ccCodeField = new JTextField();
+        this.ccCodeField.setEditable(false);
+        JLabel label = new JLabel("CC");
+        ccCodeLabelAndInput.add(label);
+        ccCodeLabelAndInput.add(Box.createHorizontalStrut(6));
+        ccCodeLabelAndInput.add(ccCodeField);
+
+        errorCodes.add(ccCodeLabelAndInput);
         errorCodes.add(Box.createVerticalStrut(2));
         errorCodes.add(new OctalInputWithButton("MFR", false, false, () -> {
         }).buildInput());
@@ -364,6 +382,11 @@ public class MainPanel implements AutoCloseable {
             cacheChangedSub.close();
         } catch (Exception ignored) {
         }
+        try {
+    this.CChangedSub.close();
+        } catch (Exception ignored) {
+        }
+       
     }
 
 }

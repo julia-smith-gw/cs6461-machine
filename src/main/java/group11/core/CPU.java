@@ -3,6 +3,7 @@ package group11.core;
 import java.io.IOException;
 
 import group11.core.RomLoader.LoadException;
+import group11.events.CChanged;
 import group11.events.EventBus;
 import group11.events.GPRChanged;
 import group11.events.IRChanged;
@@ -18,6 +19,7 @@ import group11.events.SetMBR;
 import group11.events.SetPC;
 import javax.swing.Timer;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.InputMismatchException;
 
 // assisted by chatgpt
@@ -91,6 +93,7 @@ public class CPU implements AutoCloseable {
     /**
      * Function that takes in and parses console input for numbers.
      * Continues program execution if program is running
+     * 
      * @param line Console input
      */
     public void submitConsoleInput(String line) {
@@ -341,6 +344,7 @@ public class CPU implements AutoCloseable {
 
     /**
      * Calculates effective address given r, ix, i, opcode.
+     * 
      * @param opcode 10 bit number indicating operation
      * @return int [] array of info about instruction
      */
@@ -487,9 +491,6 @@ public class CPU implements AutoCloseable {
                         // Post bus events just like before
                         this.bus.post(new MARChanged(this.memory.MAR));
                         this.bus.post(new MBRChanged(this.memory.MBR));
-                        // memory.readMemory(effectiveAddress);
-                        // this.bus.post(new MARChanged(this.memory.MAR));
-                        // this.bus.post(new MBRChanged(this.memory.MBR));
                         GPR[R] = word;
                         this.bus.post(new GPRChanged(R, GPR[R]));
                     } catch (Exception e) {
@@ -608,6 +609,7 @@ public class CPU implements AutoCloseable {
                         // --- Condition Codes per ISA ---
                         CC[0] = overflow; // OVERFLOW
                         CC[1] = false; // UNDERFLOW (not used for addition)
+                        bus.post(new CChanged(Arrays.toString(CC)));
                         bus.post(new MessageChanged("AMR executed: R" + R + " = " + GPR[R]));
                         System.out.println("AMR executed: R" + R + " = " + GPR[R]);
                     } catch (Exception e) {
@@ -630,7 +632,7 @@ public class CPU implements AutoCloseable {
                         this.memory.MBR = memValue;
                         this.bus.post(new MARChanged(this.memory.MAR));
                         this.bus.post(new MBRChanged(this.memory.MBR));
-                        
+
                         // https://chatgpt.com/share/6906f0ff-36d8-8007-a4d1-f8dac5a1f999
                         // --- Signed-underflow detection for 16-bit add (two's complement) ---
                         int a = GPR[R] & 0xFFFF;
@@ -646,6 +648,7 @@ public class CPU implements AutoCloseable {
                         // CC: mark UNDERFLOW for subtract; clear OVERFLOW (reserved for add)
                         CC[0] = false; // OVERFLOW (for addition)
                         CC[1] = underflow; // UNDERFLOW (for subtraction
+                        bus.post(new CChanged(Arrays.toString(CC)));
                         bus.post(new MessageChanged("SMR executed: R" + R + " = " + GPR[R]));
                         System.out.println("SMR executed: R" + R + " = " + GPR[R]);
                     } catch (Exception e) {
@@ -712,6 +715,7 @@ public class CPU implements AutoCloseable {
 
                         CC[0] = false; // OVERFLOW (for add)
                         CC[1] = underflow; // UNDERFLOW (for subtract)
+                        bus.post(new CChanged(Arrays.toString(CC)));
                         bus.post(new MessageChanged("SIR executed: R" + r + " = " + GPR[r]));
                     } catch (Exception e) {
                         bus.post(new MessageChanged("SIR failed: " + e.getMessage()));
@@ -722,7 +726,6 @@ public class CPU implements AutoCloseable {
                 // written with gpt assistance
                 case 010: { // JZ r,x,address[,I]
                     try {
-                        System.out.println("JZ execute");
                         this.setEffectiveAddress(opcode);
                         System.out.println("JZ effective address R:" + R + " ix: " + IX + " i flag: " + I
                                 + " effective address: " + this.effectiveAddress);
@@ -737,6 +740,7 @@ public class CPU implements AutoCloseable {
                             bus.post(new MessageChanged("JZ not taken: R" + R + "=" + GPR[R]));
                             System.out.println("JZ not taken: R" + R + "=" + GPR[R]);
                         }
+                        bus.post(new CChanged(Arrays.toString(CC)));
                     } catch (Exception e) {
                         bus.post(new MessageChanged("JZ failed: " + e.getMessage()));
                         halt();
@@ -756,6 +760,7 @@ public class CPU implements AutoCloseable {
                         } else {
                             bus.post(new MessageChanged("JNE not taken: R" + R + "=0"));
                         }
+                        bus.post(new CChanged(Arrays.toString(CC)));
                     } catch (Exception e) {
                         bus.post(new MessageChanged("JNE failed: " + e.getMessage()));
                         halt();
@@ -850,6 +855,7 @@ public class CPU implements AutoCloseable {
                             bus.post(new MessageChanged("SOB not taken: R" + R + " " + before + "→" + after));
                             System.out.println("SOB not taken: R" + R + " " + before + "→" + after);
                         }
+                        bus.post(new CChanged(Arrays.toString(CC)));
                     } catch (Exception e) {
                         bus.post(new MessageChanged("SOB failed: " + e.getMessage()));
                         halt();
@@ -873,6 +879,7 @@ public class CPU implements AutoCloseable {
                             System.out.println("JGE not taken: R" + R + "=" + signedVal + " < 0");
                             bus.post(new MessageChanged("JGE not taken: R" + R + "=" + signedVal + " < 0"));
                         }
+                        bus.post(new CChanged(Arrays.toString(CC)));
                     } catch (Exception e) {
                         bus.post(new MessageChanged("JGE failed: " + e.getMessage()));
                         halt();
@@ -948,6 +955,7 @@ public class CPU implements AutoCloseable {
 
                         // Update EQUALORNOT (CC[3]) - 1 if result == 0 else 0
                         CC[3] = (GPR[r] == 0) ? true : false;
+                        bus.post(new CChanged(Arrays.toString(CC)));
                         bus.post(new GPRChanged(r, GPR[r]));
                         bus.post(new MessageChanged(
                                 "SRC executed: R" + r + " = " + GPR[r]) +
@@ -1025,6 +1033,7 @@ public class CPU implements AutoCloseable {
 
                         // Update equality flag CC[3] according to result == 0.
                         CC[3] = GPR[r] == 0 ? true : false;
+                        bus.post(new CChanged(Arrays.toString(CC)));
                         bus.post(new GPRChanged(r, GPR[r]));
                         bus.post(new MessageChanged(
                                 "RRC executed: R" + r + " = " + String.format("0x%04X", GPR[r]) +
@@ -1054,7 +1063,7 @@ public class CPU implements AutoCloseable {
                         } else {
                             CC[0] = false;
                         }
-
+                        bus.post(new CChanged(Arrays.toString(CC)));
                         bus.post(new GPRChanged(rx, GPR[rx]));
                         bus.post(new GPRChanged(rx + 1, GPR[rx + 1]));
                     } catch (Exception e) {
@@ -1082,7 +1091,7 @@ public class CPU implements AutoCloseable {
                         int remainder = GPR[rx] % GPR[ry];
                         GPR[rx] = quotient;
                         GPR[rx + 1] = remainder;
-
+                        bus.post(new CChanged(Arrays.toString(CC)));
                         bus.post(new GPRChanged(rx, GPR[rx]));
                         bus.post(new GPRChanged(rx + 1, GPR[rx + 1]));
                     } catch (Exception e) {
@@ -1105,7 +1114,7 @@ public class CPU implements AutoCloseable {
                         } else {
                             CC[3] = false;
                         }
-
+                        bus.post(new CChanged(Arrays.toString(CC)));
                         bus.post(new MessageChanged("TRR executed. rx=" + GPR[rx] + ", ry=" + GPR[ry] +
                                 ", EqualFlag=" + CC[3]));
                     } catch (Exception e) {
