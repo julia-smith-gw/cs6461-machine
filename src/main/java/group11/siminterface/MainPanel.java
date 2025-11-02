@@ -18,8 +18,6 @@ import group11.events.SetIXR;
 import group11.events.SetMAR;
 import group11.events.SetMBR;
 import group11.events.SetPC;
-import group11.siminterface.OctalInputWithButton.OctalTextField;
-
 import java.nio.file.Path;
 
 import java.awt.*;
@@ -55,13 +53,13 @@ public class MainPanel implements AutoCloseable {
     public OctalInputWithButton PCField;
     public OctalInputWithButton IRField;
     public OctalInputWithButton octalInputField;
-    public BinaryField  binaryField;
+    public BinaryField binaryField;
     public JTextArea messageField;
     public JTextArea cacheField;
     public JTextField consoleInput;
     public JTextField ccCodeField;
 
-   public MainPanel(EventBus bus) {
+    public MainPanel(EventBus bus) {
         this.bus = bus;
 
         // create handlers binding inputs to values changed in CPU
@@ -99,34 +97,51 @@ public class MainPanel implements AutoCloseable {
             }
         });
         this.IRChangedSub = bus.subscribe(IRChanged.class, cmd -> {
-            this.IRField.setFromOctal(cmd.value());
+              if (cmd.value() != null) {
+                this.IRField.setFromOctal(cmd.value());
+            } else {
+                this.IRField.field.setText("");
+            }
         });
         this.MARChangedSub = bus.subscribe(MARChanged.class, cmd -> {
-            this.MARField.setFromOctal(cmd.value());
+            if (cmd.value() != null) {
+                this.MARField.setFromOctal(cmd.value());
+            } else {
+                this.MARField.field.setText("");
+            }
         });
         this.MBRChangedSub = bus.subscribe(MBRChanged.class, cmd -> {
-            this.MBRField.setFromOctal(cmd.value());
+            if (cmd.value() != null) {
+                this.MBRField.setFromOctal(cmd.value());
+            } else {
+                this.MBRField.field.setText("");
+            }
         });
         this.PCChangedSub = bus.subscribe(PCChanged.class, cmd -> {
-            this.PCField.setFromOctal(cmd.value());
+            if (cmd.value()!= null) {
+                this.PCField.setFromOctal(cmd.value());
+            } else {
+                this.PCField.field.setText("");
+            }
         });
         this.messageChangedSub = bus.subscribe(MessageChanged.class, cmd -> {
             this.messageField.setText(cmd.value());
         });
-        this.cacheChangedSub = bus.subscribe(CacheChanged.class, cmd ->{
+        this.cacheChangedSub = bus.subscribe(CacheChanged.class, cmd -> {
             this.cacheField.setText(cmd.cacheContent());
         });
-        this.CChangedSub = bus.subscribe(CChanged.class, cmd->{
+        this.CChangedSub = bus.subscribe(CChanged.class, cmd -> {
             this.ccCodeField.setText(cmd.ccContent());
         });
     }
 
     /**
      * Initializes interface in proper arrangement with all proper listeners
+     * 
      * @param cpu Instance of cpu
      * @return Jpanel root interface box containing all input sections
      */
-    public JPanel initializeInterface( CPU cpu, Path defaultFilePath) {
+    public JPanel initializeInterface(CPU cpu, Path defaultFilePath) {
 
         // panels defining rows for layout
         JPanel root = new JPanel();
@@ -146,20 +161,20 @@ public class MainPanel implements AutoCloseable {
         GPRInputs.setLayout(new BoxLayout(GPRInputs, BoxLayout.Y_AXIS));
         GPRInputs.add(new JLabel("GPR"));
         this.GPR0Field = new OctalInputWithButton("GPR 0", true, false, () -> {
-        this.setFieldFromOctal(this.GPR0Field);
-         this.bus.post(new SetGPR(0, this.GPR0Field.getValue()));
+            this.setFieldFromOctal(this.GPR0Field);
+            this.bus.post(new SetGPR(0, this.GPR0Field.getValue()));
         });
         GPRInputs.add(GPR0Field.buildInput());
         GPRInputs.add(Box.createVerticalStrut(2)); // spacing
-        this.GPR1Field = new OctalInputWithButton("GPR 1", true, false,() -> {
+        this.GPR1Field = new OctalInputWithButton("GPR 1", true, false, () -> {
             this.setFieldFromOctal(this.GPR1Field);
-             this.bus.post(new SetGPR(1, this.GPR1Field.getValue()));
+            this.bus.post(new SetGPR(1, this.GPR1Field.getValue()));
         });
         GPRInputs.add(GPR1Field.buildInput());
         GPRInputs.add(Box.createVerticalStrut(2));
-        this.GPR2Field = new OctalInputWithButton("GPR 2", true,false, () -> {
+        this.GPR2Field = new OctalInputWithButton("GPR 2", true, false, () -> {
             this.setFieldFromOctal(this.GPR2Field);
-             this.bus.post(new SetGPR(2, this.GPR2Field.getValue()));
+            this.bus.post(new SetGPR(2, this.GPR2Field.getValue()));
         });
         GPRInputs.add(GPR2Field.buildInput());
         GPRInputs.add(Box.createVerticalStrut(2));
@@ -182,9 +197,9 @@ public class MainPanel implements AutoCloseable {
         });
         IXRInputs.add(this.IXR1Field.buildInput());
         IXRInputs.add(Box.createVerticalStrut(2));
-        this.IXR2Field = new OctalInputWithButton("IXR 2", true,false, () -> {
+        this.IXR2Field = new OctalInputWithButton("IXR 2", true, false, () -> {
             this.setFieldFromOctal(this.IXR2Field);
-              this.bus.post(new SetIXR(2, this.IXR2Field.getValue()));
+            this.bus.post(new SetIXR(2, this.IXR2Field.getValue()));
         });
         IXRInputs.add(IXR2Field.buildInput());
         IXRInputs.add(Box.createVerticalStrut(2));
@@ -243,7 +258,8 @@ public class MainPanel implements AutoCloseable {
         actionInputs.setBorder(new EmptyBorder(12, 12, 12, 12));
         actionInputs.setLayout(new BoxLayout(actionInputs, BoxLayout.Y_AXIS));
         actionInputs.add(Box.createVerticalStrut(2));
-        this.octalInputField = new OctalInputWithButton("Octal Input", false, true, () -> {});
+        this.octalInputField = new OctalInputWithButton("Octal Input", false, true, () -> {
+        });
         actionInputs.add(this.octalInputField.buildInput());
         this.binaryField = new BinaryField(this.octalInputField);
         actionInputs.add(binaryField.buildInput());
@@ -277,6 +293,7 @@ public class MainPanel implements AutoCloseable {
         actionButtonsColumnTwo.add(Box.createVerticalStrut(2));
         actionButtonsColumnTwo.add(new ActionButton("Halt", () -> cpu.halt()));
         actionButtonsColumnTwo.add(Box.createVerticalStrut(2));
+        actionButtonsColumnTwo.add(new ActionButton("Reset", () -> cpu.reset()));
         actionButtons.add(actionButtonsColumnTwo);
         secondRow.add(actionButtons);
 
@@ -305,7 +322,8 @@ public class MainPanel implements AutoCloseable {
         JPanel fileInput = new JPanel();
         fileInput.setBorder(new EmptyBorder(12, 12, 12, 12));
         fileInput.setLayout(new BoxLayout(fileInput, BoxLayout.Y_AXIS));
-        FileInput fileInputHandler = new FileInput("Browse...", defaultFilePath != null ? defaultFilePath.toFile() : null);
+        FileInput fileInputHandler = new FileInput("Browse...",
+                defaultFilePath != null ? defaultFilePath.toFile() : null);
         fileInput.add(fileInputHandler);
         fileInput.add(Box.createHorizontalStrut(10));
         thirdRow.add(fileInput);
@@ -313,7 +331,7 @@ public class MainPanel implements AutoCloseable {
 
         // message printing
         JPanel messagePanel = new JPanel();
-        messagePanel.setBorder(new EmptyBorder(12, 12, 24, 12)); 
+        messagePanel.setBorder(new EmptyBorder(12, 12, 24, 12));
         messagePanel.setLayout(new BorderLayout());
         this.messageField = new JTextArea(5, 10);
         this.messageField.setEditable(false);
@@ -325,13 +343,13 @@ public class MainPanel implements AutoCloseable {
 
         // console input
         JPanel inputPanel = new JPanel();
-        inputPanel.setBorder(new EmptyBorder(12, 12, 24, 12)); 
+        inputPanel.setBorder(new EmptyBorder(12, 12, 24, 12));
         inputPanel.setLayout(new BorderLayout());
-        this.consoleInput= new JTextField();
+        this.consoleInput = new JTextField();
         inputPanel.add(new JLabel("Console Input"), BorderLayout.NORTH);
         inputPanel.add(this.consoleInput);
-        ActionButton consoleInputButton = new ActionButton("Submit", ()->{
-               cpu.submitConsoleInput(this.consoleInput.getText());
+        ActionButton consoleInputButton = new ActionButton("Submit", () -> {
+            cpu.submitConsoleInput(this.consoleInput.getText());
         });
         inputPanel.add(consoleInputButton, BorderLayout.EAST);
         fourthRow.add(inputPanel);
@@ -374,19 +392,19 @@ public class MainPanel implements AutoCloseable {
             PCChangedSub.close();
         } catch (Exception ignored) {
         }
-         try {
+        try {
             messageChangedSub.close();
         } catch (Exception ignored) {
         }
-         try {
+        try {
             cacheChangedSub.close();
         } catch (Exception ignored) {
         }
         try {
-    this.CChangedSub.close();
+            this.CChangedSub.close();
         } catch (Exception ignored) {
         }
-       
+
     }
 
 }

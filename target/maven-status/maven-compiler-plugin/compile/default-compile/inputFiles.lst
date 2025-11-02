@@ -12,6 +12,7 @@
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/MessageChanged.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/assembler/AssemblerConverter.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/assembler/OpcodeTable.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/CChanged.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/SetMAR.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/siminterface/MainPanel.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/SetConsoleInput.java

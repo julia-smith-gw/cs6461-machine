@@ -12,7 +12,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="US"/>
     <property name="sun.boot.library.path" value="/Library/Java/JavaVirtualMachines/jdk-24.jdk/Contents/Home/lib"/>
-    <property name="sun.java.command" value="/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire/surefirebooter-20251102015904700_3.jar /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire 2025-11-02T01-59-04_660-jvmRun1 surefire-20251102015904700_1tmp surefire_0-20251102015904700_2tmp"/>
+    <property name="sun.java.command" value="/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire/surefirebooter-20251102125638110_3.jar /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire 2025-11-02T12-56-38_064-jvmRun1 surefire-20251102125638110_1tmp surefire_0-20251102125638110_2tmp"/>
     <property name="http.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/test-classes:/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/classes:/Users/juliasmith/.m2/repository/org/junit/jupiter/junit-jupiter/5.12.1/junit-jupiter-5.12.1.jar:/Users/juliasmith/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.12.1/junit-jupiter-api-5.12.1.jar:/Users/juliasmith/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/juliasmith/.m2/repository/org/junit/platform/junit-platform-commons/1.12.1/junit-platform-commons-1.12.1.jar:/Users/juliasmith/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/juliasmith/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.12.1/junit-jupiter-params-5.12.1.jar:/Users/juliasmith/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.12.1/junit-jupiter-engine-5.12.1.jar:/Users/juliasmith/.m2/repository/org/junit/platform/junit-platform-engine/1.12.1/junit-platform-engine-1.12.1.jar:"/>
@@ -20,7 +20,6 @@
     <property name="user.home" value="/Users/juliasmith"/>
     <property name="user.language" value="en"/>
     <property name="java.specification.vendor" value="Oracle Corporation"/>
-    <property name="surefire.useFile" value="false"/>
     <property name="java.version.date" value="2025-07-15"/>
     <property name="java.home" value="/Library/Java/JavaVirtualMachines/jdk-24.jdk/Contents/Home"/>
     <property name="file.separator" value="/"/>
@@ -30,7 +29,7 @@
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="apple.awt.application.name" value="ForkedBooter"/>
-    <property name="surefire.real.class.path" value="/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire/surefirebooter-20251102015904700_3.jar"/>
+    <property name="surefire.real.class.path" value="/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire/surefirebooter-20251102125638110_3.jar"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="ftp.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.runtime.version" value="24.0.2+12-54"/>
@@ -66,13 +65,12 @@ SMR effective address R:0 ix: 0 i flag: 0 effective address: 20
 SMR executed: R0 = 11
 ]]></system-out>
   </testcase>
-  <testcase name="MLT_multiplies_16x16_into_rx_and_rxplus1" classname="group11.core.ArithmeticLogicalInstructionsTest" time="0.0"/>
+  <testcase name="MLT_multiplies_16x16_into_rx_and_rxplus1" classname="group11.core.ArithmeticLogicalInstructionsTest" time="0.001"/>
   <testcase name="NOT_bitwise_complement_of_rx" classname="group11.core.ArithmeticLogicalInstructionsTest" time="0.001"/>
   <testcase name="SIR_loads_negative_immed_when_register_is_zero" classname="group11.core.ArithmeticLogicalInstructionsTest" time="0.0"/>
-  <testcase name="AMR_adds_memory_to_register_with_indexing_and_indirection" classname="group11.core.ArithmeticLogicalInstructionsTest" time="0.0">
+  <testcase name="AMR_adds_memory_to_register_with_indexing_and_indirection" classname="group11.core.ArithmeticLogicalInstructionsTest" time="0.001">
     <system-out><![CDATA[AMR exec: IR=10652
 IXR add50
-INDIRECT PLEASE
 EA debug: r=1 x=2 i=1 a5=12 ix=50 -> EA=115
 AMR effective address R:1 ix: 2 i flag: 1 effective address: 77
 AMR executed: R1 = 21
@@ -86,7 +84,7 @@ AMR effective address R:0 ix: 0 i flag: 0 effective address: 12
 AMR executed: R0 = 32768
 ]]></system-out>
   </testcase>
-  <testcase name="SMR_sets_underflow_flag_on_signed_underflow" classname="group11.core.ArithmeticLogicalInstructionsTest" time="0.0">
+  <testcase name="SMR_sets_underflow_flag_on_signed_underflow" classname="group11.core.ArithmeticLogicalInstructionsTest" time="0.001">
     <system-out><![CDATA[SMR exec: IR=12012
 EA debug: r=0 x=0 i=0 a5=12 ix=0 -> EA=12
 SMR effective address R:0 ix: 0 i flag: 0 effective address: 10
@@ -107,10 +105,10 @@ AIR decoded:=3 immed: 15
 AIR executed: R3 = 15
 ]]></system-out>
   </testcase>
-  <testcase name="DVD_divides_rx_by_ry_puts_quotient_and_remainder_and_sets_divzero" classname="group11.core.ArithmeticLogicalInstructionsTest" time="0.0">
+  <testcase name="DVD_divides_rx_by_ry_puts_quotient_and_remainder_and_sets_divzero" classname="group11.core.ArithmeticLogicalInstructionsTest" time="0.001">
     <system-out><![CDATA[ mem output, 0020: 0 0021: 0 0022: 0 0023: 0
 program halted
 ]]></system-out>
   </testcase>
-  <testcase name="SIR_immed_zero_is_noop" classname="group11.core.ArithmeticLogicalInstructionsTest" time="0.001"/>
+  <testcase name="SIR_immed_zero_is_noop" classname="group11.core.ArithmeticLogicalInstructionsTest" time="0.0"/>
 </testsuite>

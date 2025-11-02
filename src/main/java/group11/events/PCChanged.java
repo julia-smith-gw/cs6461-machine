@@ -1,3 +1,3 @@
 package group11.events;
 
-public record PCChanged(int value) implements CPUEvent {}
+public record PCChanged(Integer value) implements CPUEvent {}

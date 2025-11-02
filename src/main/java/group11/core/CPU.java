@@ -117,27 +117,30 @@ public class CPU implements AutoCloseable {
                 String normalized = (line == null) ? "" : line.trim();
                 String[] parts = normalized.isEmpty() ? new String[0] : normalized.split("[,\\s]+");
 
+                // throw error if user did not provide all input requested
+                if (parts.length < count) {
+                    throw new InputMismatchException("User entered less than " + count + " numbers. Please try again");
+                }
+
                 // How many numbers we will actually consume
                 int n = Math.min(count, parts.length);
-
                 System.out.printf("IN: desired=%d, tokens_seen=%d, writing=%d, base=%04o%n",
                         count, parts.length, n, inputBaseAddr & 0x7FF);
-                int[] numbers = new int[count];
+                short[] numbers = new short[count];
                 System.out.printf("IN base check: R%d=%o -> base=%o%n", r, GPR[r], inputBaseAddr);
 
                 System.out.printf("IN: r=%d R[r]=%04o (%d) base=%04o (%d) desired=%d%n",
                         r, GPR[r] & 0x7FF, GPR[r] & 0x7FF, inputBaseAddr, inputBaseAddr, count);
                 // parse numbers and store to memory
                 for (int i = 0; i < count; i++) {
-                    numbers[i] = Integer.parseInt(parts[i]);
                     try {
-                        int parsedInt = Integer.parseInt(parts[i]);
-                        numbers[i] = parsedInt;
+                        numbers[i] = Short.parseShort(parts[i]);
                         int address = (inputBaseAddr + i) & 0x7FF;
                         cache.store(address, numbers[i]);
-                        System.out.printf("IN write addr=%04o (%d) val=%d%n", address, address, parsedInt);
+                        System.out.printf("IN write addr=%04o (%d) val=%d%n", address, address, numbers[i]);
                     } catch (NumberFormatException e) {
-                        throw new InputMismatchException("Input from IN includes invalid integers.");
+                        throw new InputMismatchException(
+                                "Input from IN includes invalid numbers. Numbers must be between -32,768 and 32,767. Please try again.");
                     }
                 }
                 value = numbers[0];
@@ -147,15 +150,13 @@ public class CPU implements AutoCloseable {
             GPR[r] = value;
             bus.post(new GPRChanged(r, GPR[r]));
             bus.post(new MessageChanged("Input accepted."));
-        } catch (Exception e) {
-            bus.post(new MessageChanged("IN failed: " + e.getMessage()));
-            halt();
-        } finally {
             waitingInDestReg = -1;
             waitingForConsoleInput = false;
             if (running) {
                 cpuTick.start();
             }
+        } catch (Exception e) {
+            bus.post(new MessageChanged("IN failed: " + e.getMessage()));
         }
     }
 
@@ -215,6 +216,8 @@ public class CPU implements AutoCloseable {
      * instructions one at a time
      */
     public void step() {
+        if (waitingForConsoleInput)
+            return;
         fetch();
         decodeAndExecute();
         this.completedInstructions++;
@@ -230,7 +233,7 @@ public class CPU implements AutoCloseable {
                 this.bus.post(new MessageChanged("MAR must be defined to use loadPlus."));
                 return;
             }
-            memory.readMemory(this.memory.MAR);
+            this.memory.MBR = this.cache.load(this.memory.MAR);
             // update +1 MAR before load plus is read again if applicable
             this.bus.post(new MARChanged(this.memory.MAR));
             this.bus.post(new MBRChanged(this.memory.MBR));
@@ -253,7 +256,7 @@ public class CPU implements AutoCloseable {
                 this.bus.post(new MessageChanged("MAR and MBR must be defined to use storePlus."));
                 return;
             }
-            memory.writeMemory(this.memory.MAR, this.memory.MBR);
+            this.cache.store(this.memory.MAR, this.memory.MBR);
             this.bus.post(new MessageChanged("MBR value of " + this.memory.MBR + " stored at address " + this.memory.MAR
                     + ". New MAR at " + this.memory.MAR + 1));
             int newMAR = memory.readMARAddress() + 1;
@@ -459,6 +462,43 @@ public class CPU implements AutoCloseable {
         // Overflow iff a and b have different signs, and diff’s sign differs from a’s
         // sign.
         return (((a ^ b) & 0x8000) != 0) && (((a ^ diff) & 0x8000) != 0);
+    }
+
+    /**
+     * Empties all registers, memory blocks, and cache, effectively restarting
+     * machine
+     */
+    public void reset() {
+        running = false;
+        pendingInstructions = 0;
+        completedInstructions = 0;
+        effectiveAddress = 0;
+        R = 0;
+        IX = 0;
+        I = 0;
+        opcode = 0;
+        message = "CPU reset. Cache emptied, memory emptied, all registers zeroed.";
+        GPR = new int[4]; // R0-R3
+        IXR = new int[4]; // X1-X3
+        CC = new boolean[4];
+        PC = 0; // Program Counter
+        IR = 0; // Instruction Register
+
+        memory.reset();
+        cache.reset();
+        this.bus.post(new GPRChanged(0, GPR[0]));
+        this.bus.post(new GPRChanged(1, GPR[1]));
+        this.bus.post(new GPRChanged(2, GPR[2]));
+        this.bus.post(new GPRChanged(3, GPR[3]));
+        this.bus.post(new IXRChanged(1, IXR[1]));
+        this.bus.post(new IXRChanged(2, IXR[2]));
+        this.bus.post(new IXRChanged(3, IXR[3]));
+        this.bus.post(new MBRChanged(this.memory.MBR));
+        this.bus.post(new MARChanged(this.memory.MAR));
+        this.bus.post(new PCChanged(PC));
+        this.bus.post(new IRChanged(IR));
+        this.bus.post(new CChanged(Arrays.toString(CC)));
+        this.bus.post(new MessageChanged(message));
     }
 
     /**

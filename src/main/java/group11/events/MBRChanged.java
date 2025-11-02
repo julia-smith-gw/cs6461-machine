@@ -1,3 +1,3 @@
 package group11.events;
 
-public record MBRChanged(int value) implements CPUEvent{}
+public record MBRChanged(Integer value) implements CPUEvent{}

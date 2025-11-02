@@ -2,6 +2,7 @@
 
 ## REQUIREMENTS ##
 Java 24 (JDK) installed on machine. See instructions here: https://www.oracle.com/java/technologies/downloads/
+To run test files, you must have Maven installed. See instructions at https://maven.apache.org/install.html. You only need Maven if you want to run the test files. The main program only requires a JDK.
 
 1. Open a terminal (bash/zsh)
 2. Navigate to the terminal wherever the JAR file is downloaded: cd <...path to jar >
@@ -13,29 +14,29 @@ Java 24 (JDK) installed on machine. See instructions here: https://www.oracle.co
 4. When the terminal prompts you for a path to an assembler source file, enter the path. You may need to use an absolute path to the assembler source file.
 5. Sim to your heart's content :). Test files with test output are located in /sourcefiles of the codebase.
 
-## INSTRUCTION TESTS ##
-Tests for checking the correctness of our instruction implementation can be run using the following instructions:
+## RUNNING TESTS TO CHECK FOR INSTRUCTION COMPLETENESS ##
+Remember that you need Maven as a prerequisite.
+Tests for checking the correctness/completeness of our instruction implementation can be run using the following instructions:
 1. Open a terminal (bash/zsh)
-2. Navigate to the terminal wherever the JAR file/project is downloaded: cd <...path to jar >
-3. Run this command: 
-
+2. Navigate to the terminal wherever the source project is downloaded: cd <...path to computer-simulator >
+3. Run this command to see test output:
  ```shell
- java -jar computer-simulator-1.0-SNAPSHOT.jar
+ mvn test
  ```
-4. When the terminal prompts you for a path to an assembler source file, enter the path. You may need to use an absolute path to the assembler source file.
-5. Sim to your heart's content :). Test files with test output are located in /sourcefiles of the codebase.
-
-
 ## USING SIMULATOR INTERFACE ##
 The simulator interface looks much like the one on the ISA document. From left to right on the top, we see we have GPR inputs (general purpose registers), IXR inputs (index registers), the PC (program counter), 
-MAR (the memory address register), MBR (memory buffer register), and IR (instruction register). The very far right on the top has a big area for showing cache debug dumps. In the middle, we see we have octal input (our main input field), as well as some control buttons (explained more below). Finally, the bottom section is occupied by a textArea that displays error or execution messages if applicable, as well as a console input area that will allow the user to put words into programs.
-![simulator](image.png)
+MAR (the memory address register), MBR (memory buffer register), and IR (instruction register). The very far right on the top has a big area for showing cache debug dumps. In the middle, we see we have octal input (our main input field), as well as some control buttons (explained more below). Finally, the bottom section is occupied by a textArea that displays error or execution messages if applicable, as well as a console input area that will allow the user to put words into programs. If the program prompts you for input, enter it in the bottom right and click 'Submit'.
 
-### TEST FILE ###
-The simulator comes pre-loaded with a nominal test file that prompts the user for 20 numbers, prints them to the console, prompts the user for another number (the target), and then finds the target's closest number from the original 20. The final closest number is displayed in octal in GPR3. This file starts from PC counter 6 (octal 000006). Make sure to enter this PC if you use this nominal test file.
+### TEST PROGRAM 1 ###
+The simulator comes pre-loaded with a nominal test file that prompts the user for 20 numbers, prints them to the console, prompts the user for another number (the target), and then finds the target's closest number from the original 20. When prompted for input, the program will temporarily halt. To continue, enter a string of space-separated numbers in the lower-right input area, and then click 'Submit'.
+The final closest number is displayed in octal in GPR3. 
+IMPORTANT: This file starts from PC counter 6 (octal 000006). Make sure to enter this PC if you use this nominal test file. 
 
-### PROVIDING INPUTS ###
+### PROVIDING OCTAL INPUTS ###
 All fields with an 'Apply' button next to them can have their value set via the Octal Value input. Enter your desired value in six-digit octal in the Octal Vaue input and click 'Apply' next to the desired field to change it.
+
+### PROVIDING CONSOLE INPUT ###
+When prompted for input, the program will temporarily halt. To continue, enter a string appropriately formatted according to progrma messages in the lower-right input area labeled 'Console Input,' and then click 'Submit'.
 
 ### LOADING AND RUNNING FILE ###
 The simulator accepts a two-column .txt load file output by our assembler to execute. 

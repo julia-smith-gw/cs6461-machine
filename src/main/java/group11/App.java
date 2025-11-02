@@ -12,9 +12,7 @@ import group11.core.RomLoader;
 import group11.events.EventBus;
 import group11.siminterface.MainPanel;
 import group11.util.ResourceUtil;
-import group11.assembler.Assembler;
 import java.awt.Dimension;
-
 
 public class App 
 {
@@ -42,8 +40,5 @@ public class App
             f.setLocationByPlatform(true);
             f.setVisible(true);
         });
-
-        // Assembler assembler = new Assembler();
-        // assembler.assemble();
     }
 }

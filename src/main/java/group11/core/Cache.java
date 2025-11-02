@@ -26,11 +26,7 @@ public class Cache {
     public Cache(Memory memory, EventBus eventBus) {
         this.memory = memory;
         this.eventBus = eventBus;
-        CacheLine[] cacheLines = new CacheLine[CACHE_LINES];
-        for (int i = 0; i < CACHE_LINES; i++)
-            cacheLines[i] = new CacheLine();
-        this.queue = new LinkedList<>(Arrays.asList(cacheLines));
-        this.dumpSummary();
+        this.reset();
     }
 
     /** READ: fill on miss, FIFO replacement. */
@@ -100,6 +96,17 @@ public class Cache {
         if (found != null)
             promoteToMRU(found);
         return found;
+    }
+
+    /**
+     * Dumps all lines from cache, zeroing it out 
+     */
+    public void reset(){
+        CacheLine[] cacheLines = new CacheLine[CACHE_LINES];
+        for (int i = 0; i < CACHE_LINES; i++)
+            cacheLines[i] = new CacheLine();
+        this.queue = new LinkedList<>(Arrays.asList(cacheLines));
+        this.dumpSummary();
     }
 
     /**

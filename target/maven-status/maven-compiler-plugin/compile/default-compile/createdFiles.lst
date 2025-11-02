@@ -31,6 +31,7 @@ group11/events/PCChanged.class
 group11/core/Cache.class
 group11/assembler/ArgTypes.class
 group11/core/CacheLine.class
+group11/events/CChanged.class
 group11/assembler/OpcodeTable.class
 group11/siminterface/OctalInputWithButton.class
 group11/events/IRChanged.class
