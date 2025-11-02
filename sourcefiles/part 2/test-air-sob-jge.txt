@@ -1,0 +1,34 @@
+              LOC 6
+START:        LDR 0,0,DATA_300      ; R0 ← 0
+              AIR 0,5
+              AIR 0,5
+              AIR 0,5
+              AIR 0,5
+              AIR 0,5
+              STR 0,0,DATA_301      ; store 25
+
+              LDR 1,0,DATA_302      ; R1 ← 3
+LOOP_TOP:     AIR 0,0                ; no-op loop anchor
+              SOB 1,0,LOOP_TOP       ; dec R1, branch back while R1>0
+              STR 1,0,DATA_303       ; store final R1 (0)
+
+              LDR 2,0,DATA_304       ; R2 ← -3
+              LDR 3,0,DATA_305       ; R3 ← +5
+              JGE 3,0,POS_PATH       ; if R3 ≥ 0 → POS_PATH
+              JGE 2,0,NEG_PATH       ; if R2 ≥ 0 → NEG_PATH
+              JMA 0,END,0            ; otherwise → END
+
+POS_PATH:     STR 3,0,DATA_306       ; store +5
+              JMA 0,END,0           ; then → END
+
+NEG_PATH:     STR 2,0,DATA_307       ; store -3
+END:          HLT
+
+DATA_300:     Data 0
+DATA_301:     Data 0
+DATA_302:     Data 3
+DATA_303:     Data 0
+DATA_304:     Data -3
+DATA_305:     Data 5
+DATA_306:     Data 0
+DATA_307:     Data 0

@@ -196,7 +196,7 @@ public class AssemblerConverter {
                     "Invalid index register format: " + s + ". Index can be: 0, 1, 2, 3 or X1, X2, X3.");
         }
 
-        if (indexRegister < 1 || indexRegister > 3) {
+        if (indexRegister < 0 || indexRegister > 3) {
             throw new IllegalArgumentException(
                     "Index register out of range. Register can be: 0, 1, 2, 3 or X1, X2, X3.");
         }
@@ -216,8 +216,8 @@ public class AssemblerConverter {
             throw new IllegalArgumentException("Undefined label: " + s);
         }
 
-        if (address < 0 || address > 31) {
-            throw new IllegalAccessError("Address for label" + s + " is out of memory range from 0 to 31.");
+        if (address < 0 || address > 2047) {
+            throw new IllegalAccessError("Address for label" + s + " is out of memory range from 0 to 2047.");
         }
         return address;
     }

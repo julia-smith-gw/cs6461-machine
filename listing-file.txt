@@ -1,39 +1,118 @@
-             	LOC 6
-000006 000000	zero: DATA 0
-000007 006006	LDA 0,0,zero       ; R0 = 0300 (octal)
-000010 014003	AIR 0,3            ; R0 = 3
-000011 062154	SRC 0,6,L,L        ; shift left 6 (LR=1 for left, AL=0 for logical) → R0 = 0300
-000012 004024	STR 0,0,20         ; [0020] = 0300 (safe cell far from buffer)
-000013 102124	LDX 1,20           ; X1 = [0020] = 0300  (touches M[0300] before IN)
-000014 003500	LDR 3,1,0          ; R3 <- M[X1] (sets MAR=0300; good if IN uses MAR)
-000015 007406	LDA 3,0,zero       ; R3 = 0
-000016 003406	LDR 3,0,zero       ; R3 ← M[zero] = 0   (since zero: DATA 0)
-000017 015424	AIR 3,20           ; R3 = 20
-000020 144010	OUT 0,1            ; guidance for 20 numbers (see AIR and LDA above)
-000021 142000	IN  0,0            ; store 20 ints at M[R0] .. M[R0+19]
-000022 102124	LDX 1,20           ; re-seed X1 = [0020] = 0300
-000023 002024	LDR 0,0,20         ; R0 = [0020] = 0300 (defensive)
-000024 004024	STR 0,0,20         ; keep [0020] = 0300
-000025 102124	LDX 1,20           ; X1 = 0300
-000026 007024	LDA 2,0,20         ; R2 = 20
-000027 003500	LDR 3,1,0          ; print loop: R3 = M[X1]
-000030 145430	OUT 3,3
-000031 104124	STX 1,20           ; [0020] = X1
-000032 002024	LDR 0,0,20         ; R0 = [0020]
-000033 014001	AIR 0,1            ; R0++
-000034 004024	STR 0,0,20         ; [0020] = R0
-000035 102124	LDX 1,20           ; X1 = [0020]
-000036 035027	SOB 2,0,23
-000037 003406	LDR 3,0,zero       ; R3 = 0   (clear count)
-000040 015401	AIR 3,1            ; R3 = 1   (only one number this time)
-000041 002024	LDR 0,0,20         ; R0 = [0020] = 0300
-000042 014024	AIR 0,20           ; R0 = 0300 + 20 = 0324 (next free 20-slot window)
-000043 004025	STR 0,0,21        ; save base at [0021] BEFORE IN clobbers R0
-000044 144010	OUT 0,1         ; ask for one number
-000045 142000	IN  0,0         ; reads 1 number into M[R0]
-000046 102125	LDX 1,21        ; X1 = saved base
-000047 003500	LDR 3,1,0       ; R3 = M[X1] -> the single number
-000050 145430	OUT 3,3
-000051 000000	HLT
+             	              LOC 6
+000006 015001	              AIR 2,1                 ; R2 = 1
+000007 063154	              SRC 2,6,L,L             ; R2 = 0o0100
+000010 015030	              AIR 2,24                ; +24(dec) = +0o30  => R2 = 0o0130
+000011 005026	              STR 2,0,22
+000012 102226	              LDX 2,22                ; IX2 = 0o0130
+000013 002213	              LDR 0,2,11             ; R0 := M[X2+11] = ZERO = 0
+000014 014003	              AIR 0,3                ; R0 := 0003₈
+000015 062154	              SRC 0,6,L,L            ; R0 := 0300₈
+000016 004024	              STR 0,0,20             ; [0020] = 0300₈
+000017 102124	              LDX 1,20               ; IX1 := 0300₈
+000020 002024	              LDR 0,0,20
+000021 004027	              STR 0,0,23
+000022 002613	              LDR 1,2,11
+000023 014424	              AIR 1,20
+000024 144010	              OUT 0,1
+000025 142000	              IN 0,0
+000026 102124	              LDX 1,20
+000027 002024	              LDR 0,0,20
+000030 004027	              STR 0,0,23
+000031 002613	              LDR 1,2,11
+000032 014424	              AIR 1,20
+000033 102127	PLOOP:        LDX 1,23
+000034 003500	              LDR 3,1,0
+000035 145430	              OUT 3,3
+000036 002027	              LDR 0,0,23
+000037 014001	              AIR 0,1
+000040 004027	              STR 0,0,23
+000041 034433	              SOB 1,0,PLOOP
+000042 003613	              LDR 3,2,11            ; ---- Stage 3: read single target number (count = 1) ----
+000043 015401	              AIR 3,1
+000044 002024	              LDR 0,0,20
+000045 014024	              AIR 0,20
+000046 004025	              STR 0,0,21
+000047 144010	              OUT 0,1
+000050 142000	              IN  0,0
+000051 102125	              LDX 1,21
+000052 003500	              LDR 3,1,0
+000053 005615	              STR 3,2,13              ; Mirror TARGET into X2 scratch so we can use small offsets in the loop TARGETX := R3  (at X2+13)
+000054 002024	              LDR 0,0,20              ; Reset pointer and seed from first element at base 0300 R0 := 0300
+000055 004027	              STR 0,0,23              ; [0023] := 0300
+000056 003613	              LDR 3,2,11              ; R3 := 0 (ZERO via X2+11). Next lines set up scan loop code base 'page'
+000057 015401	              AIR 3,1                 ; R3 := 1
+000060 063554	              SRC 3,6,L,L             ; R3 := 0100₈
+000061 005432	              STR 3,0,26              ; [0026] := 0100₈   ; choose any free low cell
+000062 102332	              LDX 3,26                ; IX3 := 0100₈
+000063 014424	              AIR 1,20                ; R1 := 20 total elements
+000064 102127	              LDX 1,23                ;  ---- Seed DIFFMIN and BESTVAL from first element ---- X1 := [0023]
+000065 003100	              LDR 2,1,0               ; R2 := M[X1] (first value)
+000066 005216	              STR 2,2,14              ; CURVALX := R2
+000067 013215	              SMR 2,2,13              ; R2 := |CURVALX - TARGETX| R2 := R2 - M[TARGETX]
+000070 037335	              JGE 2,3,INIT_OK
+000071 002215	              LDR 0,2,13              ; R0 := TARGETX
+000072 012216	              SMR 0,2,14              ; R0 := target - value
+000073 004217	              STR 0,2,15              ; DIFFABSX := |diff|
+000074 003217	              LDR 2,2,15              ; R2 := |diff|
+000075 005220	INIT_OK:      STR 2,2,16              ; DIFFMINX := |diff(first)|
+000076 003616	              LDR 3,2,14              ; R3 := first value
+000077 005621	              STR 3,2,17              ; BESTVALX := first value
+000100 002027	              LDR 0,0,23              ; advance ptr; set remaining count to 19 R0 := ptr
+000101 014001	              AIR 0,1                 ; R0++
+000102 004027	              STR 0,0,23              ; [0023] := ptr+1
+000103 002613	              LDR 1,2,11              ; R1 := 0. we have to zero so that AIR can set to 19 for remaining loop iters on the next line
+000104 014423	              AIR 1,19                ; R1 := 19
+000105 102127	SCAN_LOOP:    LDX   1,23             ; X1 := [0023]
+000106 003100	              LDR   2,1,0            ; R2 := M[X1]        (current value)
+000107 005216	              STR   2,2,14           ; CURVALX := R2
+000110 013215	              SMR   2,2,13           ; R2 := CURVALX - TARGETX
+000111 037316	              JGE   2,3,HAVE_ABS     ; if >=0, R2 already holds |diff|
+000112 002215	              LDR   0,2,13           ; R0 := TARGETX
+000113 012216	              SMR   0,2,14           ; R0 := TARGETX - CURVALX
+000114 004217	              STR   0,2,15           ; DIFFABSX := |diff|
+000115 003217	              LDR   2,2,15           ; R2 := |diff|
+000116 005217	HAVE_ABS:     STR   2,2,15           ; DIFFABSX := |diff| (also for diff >= 0)**   
+000117 002220	              LDR   0,2,16            ; R0 := DIFFMINX
+000120 012217	              SMR   0,2,15            ; R0 := DIFFMINX - |diff|
+000121 036323	              JGE   0,3,TAKE_NEW_MIN  ; **FIX**: test R0 (the compare result), not R2
+000122 026326	              JMA   3,STEP_PTR
+000123 005220	TAKE_NEW_MIN: STR   2,2,16            ; DIFFMINX := |diff|
+000124 003616	              LDR   3,2,14            ; R3 := CURVALX
+000125 005621	              STR   3,2,17            ; BESTVALX := R3
+000126 002027	STEP_PTR:     LDR   0,0,23           ; R0 := ptr; Move pointer forward by 1 and loop back
+000127 014001	              AIR   0,1              ; R0 := ptr + 1
+000130 004027	              STR   0,0,23           ; [0023] := ptr+1
+000131 034705	              SOB   1,3,SCAN_LOOP    ; SOB decrements R1 and branches back to SCAN_LOOP while R1 > 0. When R1 becomes 0, it falls through to SCAN_DONE.
+000132 002221	SCAN_DONE:    LDR 0,2,17      ; R0 := BESTVALX
+000133 002620	              LDR 1,2,16      ; R1 := DIFFMINX
+000134 144030	              OUT 0,3         ; print best value
+000135 144430	              OUT 1,3         ; print min diff
+000136 000000	              HLT
+000137 000000	POOL_BASE:    DATA 0        ; +0 (anchor; value unused)
+000140 000000	PAD1:         DATA 0        ; +1
+000141 000000	PAD2:         DATA 0        ; +2
+000142 000000	PAD3:         DATA 0        ; +3
+000143 000000	PAD4:         DATA 0        ; +4
+000144 000000	PAD5:         DATA 0        ; +5
+000145 000000	PAD6:         DATA 0        ; +6
+000146 000000	PAD7:         DATA 0        ; +7
+000147 000000	PAD8:         DATA 0        ; +8
+000150 000000	PAD9:         DATA 0        ; +9
+000151 000000	PAD10:        DATA 0        ; +10
+000152 000000	ZERO:         DATA 0        ; +11  <-- used by LDR *,2,11
+000153 000001	ONE:          DATA 1        ; +12
+000154 000024	COUNT20:      DATA 20       ; +13
+000155 37777777777	NEG1:         DATA -1       ; +14
+000156 000000	TARGETX:      DATA 0        ; +15 ; X2-based scratch (use offsets in code if needed)
+000157 000000	CURVALX:      DATA 0        ; +16
+000160 000000	DIFFABSX:     DATA 0        ; +17
+000161 000000	DIFFMINX:     DATA 0        ; +18
+000162 000000	BESTVALX:     DATA 0        ; +19
+000163 000000	TARGET:       DATA 0        ; globals (kept for compatibility)
+000164 000000	WORKPTR:      DATA 0
+000165 000000	DIFFABS:      DATA 0
+000166 000000	DIFFMIN:      DATA 0
+000167 000000	CURVAL:       DATA 0
+000170 000000	BESTVAL:      DATA 0
 
 ** NO ERRORS FOUND DURING ASSEMBLY. LOAD FILE PRODUCED **

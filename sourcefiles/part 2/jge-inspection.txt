@@ -1,0 +1,3 @@
+        LOC 6
+LBL:    HLT
+        JGE 2,0,LBL

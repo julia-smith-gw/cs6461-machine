@@ -13,6 +13,8 @@ public class SymbolTable {
     }
 
     public int getAddress(String label) {
+        System.out.println("GET ADDRESS");
+        System.out.println(label);
         return symbols.getOrDefault(label, -1);
     }
 
