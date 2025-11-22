@@ -27,7 +27,7 @@ public class CPU implements AutoCloseable {
 
     // event bus and subscriptions
     private final EventBus bus;
-
+    private final BranchPredictor branchPredictor;
     private final Cache cache;
 
     private final AutoCloseable SetGPRSub;
@@ -70,6 +70,7 @@ public class CPU implements AutoCloseable {
         this.bus = bus;
         this.romLoader = romLoader;
         this.cache = cache;
+        this.branchPredictor = new BranchPredictor(bus);
 
         // initialize listeners on input fields to watch for changes
         this.SetGPRSub = bus.subscribe(SetGPR.class, cmd -> {
@@ -483,6 +484,7 @@ public class CPU implements AutoCloseable {
         CC = new boolean[4];
         PC = 0; // Program Counter
         IR = 0; // Instruction Register
+        branchPredictor.reset();
 
         memory.reset();
         cache.reset();
@@ -769,16 +771,35 @@ public class CPU implements AutoCloseable {
                         this.setEffectiveAddress(opcode);
                         System.out.println("JZ effective address R:" + R + " ix: " + IX + " i flag: " + I
                                 + " effective address: " + this.effectiveAddress);
-                        boolean isZero = (GPR[R] & 0xFFFF) == 0;
-                        CC[3] = isZero; // EQUAL flag reflects result
 
-                        if (isZero) {
-                            this.PC = this.effectiveAddress;
+                        int branchPC = (this.PC - 1) & 0x7FF; // address of this JZ
+                        int fallthroughPC = this.PC; // PC was incremented in fetch()
+                        int targetPC = this.effectiveAddress;
+
+                        // --- prediction ---
+                        boolean predictedTaken = branchPredictor.predictTaken(branchPC);
+                        int predictedNextPC = predictedTaken ? targetPC : fallthroughPC;
+
+                        // --- actual outcome ---
+                        boolean isZero = (GPR[R] & 0xFFFF) == 0;
+                        CC[3] = isZero; // EQUAL flag
+
+                        boolean actuallyTaken = isZero;
+                        int actualNextPC = actuallyTaken ? targetPC : fallthroughPC;
+
+                        // --- record stats + update predictor ---
+                        boolean correct = (predictedNextPC == actualNextPC);
+                        branchPredictor.recordPredictionResult(correct);
+
+                        branchPredictor.update(branchPC, actuallyTaken);
+
+                        // --- commit real next PC ---
+                        this.PC = actualNextPC;
+
+                        if (actuallyTaken) {
                             bus.post(new MessageChanged("JZ taken: R" + R + "=0 → PC=" + this.PC));
-                            System.out.println("JZ taken: R" + R + "=0 → PC=" + this.PC);
                         } else {
                             bus.post(new MessageChanged("JZ not taken: R" + R + "=" + GPR[R]));
-                            System.out.println("JZ not taken: R" + R + "=" + GPR[R]);
                         }
                         bus.post(new CChanged(Arrays.toString(CC)));
                     } catch (Exception e) {
@@ -794,8 +815,27 @@ public class CPU implements AutoCloseable {
                         boolean notZero = (GPR[R] & 0xFFFF) != 0;
                         CC[3] = !notZero ? true : false; // If equal, set; if not equal, clear
 
+                        int branchPC = (this.PC - 1) & 0x7FF; // address of this jne
+                        int fallthroughPC = this.PC; // PC was incremented in fetch()
+                        int targetPC = this.effectiveAddress;
+
+                        // --- prediction ---
+                        boolean predictedTaken = branchPredictor.predictTaken(branchPC);
+                        int predictedNextPC = predictedTaken ? targetPC : fallthroughPC;
+
+                        boolean actuallyTaken = notZero;
+                        int actualNextPC = actuallyTaken ? targetPC : fallthroughPC;
+
+                        // --- record stats + update predictor ---
+                        boolean correct = (predictedNextPC == actualNextPC);
+                        branchPredictor.recordPredictionResult(correct);
+
+                        branchPredictor.update(branchPC, actuallyTaken);
+
+                        // --- commit real next PC ---
+                        this.PC = actualNextPC;
+
                         if (notZero) {
-                            this.PC = this.effectiveAddress;
                             bus.post(new MessageChanged("JNE taken: R" + R + "!=0 → PC=" + this.PC));
                         } else {
                             bus.post(new MessageChanged("JNE not taken: R" + R + "=0"));
@@ -815,8 +855,26 @@ public class CPU implements AutoCloseable {
                         if (ccIndex < 0 || ccIndex > 3)
                             throw new IllegalArgumentException("Invalid CC index: " + ccIndex);
 
+                        int branchPC = (this.PC - 1) & 0x7FF; // address of this JCC
+                        int fallthroughPC = this.PC; // PC was incremented in fetch()
+                        int targetPC = this.effectiveAddress;
+
+                        // --- prediction ---
+                        boolean predictedTaken = branchPredictor.predictTaken(branchPC);
+                        int predictedNextPC = predictedTaken ? targetPC : fallthroughPC;
+
+                        boolean actuallyTaken = CC[ccIndex];
+                        int actualNextPC = actuallyTaken ? targetPC : fallthroughPC;
+
+                        // --- record stats + update predictor ---
+                        boolean correct = (predictedNextPC == actualNextPC);
+                        branchPredictor.recordPredictionResult(correct);
+                        branchPredictor.update(branchPC, actuallyTaken);
+
+                        // --- commit real next PC ---
+                        this.PC = actualNextPC;
+
                         if (CC[ccIndex]) {
-                            this.PC = this.effectiveAddress;
                             bus.post(new MessageChanged("JCC taken: CC[" + ccIndex + "]=1 → PC=" + this.PC));
                         } else {
                             bus.post(new MessageChanged("JCC not taken: CC[" + ccIndex + "]=0"));
@@ -886,8 +944,27 @@ public class CPU implements AutoCloseable {
                         // Update EQUAL flag: if result == 0, CC[3]=true
                         CC[3] = (after == 0);
 
+                        int branchPC = (this.PC - 1) & 0x7FF; // address of this SOB
+                        int fallthroughPC = this.PC; // PC was incremented in fetch()
+                        int targetPC = this.effectiveAddress;
+
+                        // --- prediction ---
+                        boolean predictedTaken = branchPredictor.predictTaken(branchPC);
+                        int predictedNextPC = predictedTaken ? targetPC : fallthroughPC;
+
+                        boolean actuallyTaken = (short) after > 0;
+                        int actualNextPC = actuallyTaken ? targetPC : fallthroughPC;
+
+                        // --- record stats + update predictor ---
+                        boolean correct = (predictedNextPC == actualNextPC);
+                        branchPredictor.recordPredictionResult(correct);
+
+                        branchPredictor.update(branchPC, actuallyTaken);
+
+                        // --- commit real next PC ---
+                        this.PC = actualNextPC;
+
                         if ((short) after > 0) {
-                            this.PC = this.effectiveAddress;
                             bus.post(new MessageChanged(
                                     "SOB taken: R" + R + " " + before + "→" + after + ", PC=" + this.PC));
                             System.out.println("SOB taken: R" + R + " " + before + "→" + after + ", PC=" + this.PC);
@@ -911,8 +988,28 @@ public class CPU implements AutoCloseable {
                                 + " effective address: " + this.effectiveAddress);
                         int signedVal = (short) GPR[R];
                         CC[3] = (signedVal == 0); // equal flag if exactly zero
+
+                        int branchPC = (this.PC - 1) & 0x7FF; // address of this JGE
+                        int fallthroughPC = this.PC; // PC was incremented in fetch()
+                        int targetPC = this.effectiveAddress;
+
+                        // --- prediction ---
+                        boolean predictedTaken = branchPredictor.predictTaken(branchPC);
+                        int predictedNextPC = predictedTaken ? targetPC : fallthroughPC;
+
+                        boolean actuallyTaken = signedVal >= 0;
+                        int actualNextPC = actuallyTaken ? targetPC : fallthroughPC;
+
+                        // --- record stats + update predictor ---
+                        boolean correct = (predictedNextPC == actualNextPC);
+                        branchPredictor.recordPredictionResult(correct);
+
+                        branchPredictor.update(branchPC, actuallyTaken);
+
+                        // --- commit real next PC ---
+                        this.PC = actualNextPC;
+
                         if (signedVal >= 0) {
-                            this.PC = this.effectiveAddress;
                             System.out.println("JGE taken: R" + R + "=" + signedVal + " ≥ 0 → PC=" + this.PC);
                             bus.post(new MessageChanged("JGE taken: R" + R + "=" + signedVal + " ≥ 0 → PC=" + this.PC));
                         } else {

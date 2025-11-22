@@ -12,6 +12,7 @@ import group11.events.IXRChanged;
 import group11.events.MARChanged;
 import group11.events.MBRChanged;
 import group11.events.MessageChanged;
+import group11.events.BranchPredictionStatsChanged;
 import group11.events.PCChanged;
 import group11.events.SetGPR;
 import group11.events.SetIXR;
@@ -40,6 +41,7 @@ public class MainPanel implements AutoCloseable {
     private final AutoCloseable messageChangedSub;
     private final AutoCloseable cacheChangedSub;
     private final AutoCloseable CChangedSub;
+    private final AutoCloseable branchStatsSub;
 
     public OctalInputWithButton MBRField;
     public OctalInputWithButton MARField;
@@ -58,6 +60,9 @@ public class MainPanel implements AutoCloseable {
     public JTextArea cacheField;
     public JTextField consoleInput;
     public JTextField ccCodeField;
+    public JLabel branchTotalLabel;
+    public JLabel branchCorrectLabel;
+    public JLabel branchAccuracyLabel;
 
     public MainPanel(EventBus bus) {
         this.bus = bus;
@@ -97,7 +102,7 @@ public class MainPanel implements AutoCloseable {
             }
         });
         this.IRChangedSub = bus.subscribe(IRChanged.class, cmd -> {
-              if (cmd.value() != null) {
+            if (cmd.value() != null) {
                 this.IRField.setFromOctal(cmd.value());
             } else {
                 this.IRField.field.setText("");
@@ -118,7 +123,7 @@ public class MainPanel implements AutoCloseable {
             }
         });
         this.PCChangedSub = bus.subscribe(PCChanged.class, cmd -> {
-            if (cmd.value()!= null) {
+            if (cmd.value() != null) {
                 this.PCField.setFromOctal(cmd.value());
             } else {
                 this.PCField.field.setText("");
@@ -132,6 +137,11 @@ public class MainPanel implements AutoCloseable {
         });
         this.CChangedSub = bus.subscribe(CChanged.class, cmd -> {
             this.ccCodeField.setText(cmd.ccContent());
+        });
+        this.branchStatsSub = bus.subscribe(BranchPredictionStatsChanged.class, evt -> {
+            branchTotalLabel.setText(Integer.toString(evt.totalBranches()));
+            branchCorrectLabel.setText(Integer.toString(evt.correctPredictions()));
+            branchAccuracyLabel.setText(String.format("%.1f%%", evt.accuracy() * 100.0));
         });
     }
 
@@ -241,7 +251,7 @@ public class MainPanel implements AutoCloseable {
         programInputs.add(Box.createHorizontalStrut(10));
         firstRow.add(programInputs);
 
-        // cache field
+        // cache field / branch prediction stats
         JPanel cachePanel = new JPanel();
         cachePanel.setBorder(new EmptyBorder(12, 12, 12, 12));
         cachePanel.setLayout(new BoxLayout(cachePanel, BoxLayout.Y_AXIS));
@@ -249,8 +259,26 @@ public class MainPanel implements AutoCloseable {
         this.cacheField.setEditable(false);
         cachePanel.add(new JLabel("Cache Content"));
         cachePanel.add(this.cacheField);
-        firstRow.add(cachePanel);
 
+        // branch prediction readout
+        JPanel branchPanel = new JPanel();
+        branchPanel.setBorder(new EmptyBorder(12, 12, 12, 12));
+        branchPanel.setLayout(new BoxLayout(branchPanel, BoxLayout.X_AXIS));
+        EmptyBorder marginBorderRight = new EmptyBorder(0, 0, 0, 10);
+        this.branchTotalLabel = new JLabel("0");
+        this.branchCorrectLabel = new JLabel("0");
+        this.branchAccuracyLabel = new JLabel("100.0%");
+        this.branchTotalLabel.setBorder(marginBorderRight);
+                this.branchCorrectLabel.setBorder(marginBorderRight);
+                           this.branchAccuracyLabel.setBorder(marginBorderRight);
+        branchPanel.add(new JLabel("Branches: "));
+        branchPanel.add(branchTotalLabel);
+        branchPanel.add(new JLabel("BP Correct: "));
+        branchPanel.add(branchCorrectLabel);
+        branchPanel.add(new JLabel("BP Accuracy: "));
+        branchPanel.add(branchAccuracyLabel);
+        cachePanel.add(branchPanel);
+        firstRow.add(cachePanel);
         firstRow.add(Box.createVerticalStrut(20));
 
         // binary display/octal
@@ -403,6 +431,11 @@ public class MainPanel implements AutoCloseable {
         try {
             this.CChangedSub.close();
         } catch (Exception ignored) {
+        }
+        try {
+            this.branchStatsSub.close();
+        } catch (Exception ignored) {
+
         }
 
     }
