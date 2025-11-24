@@ -39,6 +39,9 @@ public class CPU implements AutoCloseable {
     // cpu running information
     public int[] GPR = new int[4]; // R0-R3
     public int[] IXR = new int[4]; // X1-X3
+
+    public int[] FR = new int[2];  // FR0 and FR1
+
     public Integer PC = null; // Program Counter
     public Integer IR = null; // Instruction Register
 
@@ -484,6 +487,9 @@ public class CPU implements AutoCloseable {
         CC = new boolean[4];
         PC = 0; // Program Counter
         IR = 0; // Instruction Register
+
+        FR = new int[2];
+
         branchPredictor.reset();
 
         memory.reset();
@@ -1181,6 +1187,138 @@ public class CPU implements AutoCloseable {
                     }
                     break;
                 }
+                // 033- 51 witten with GPT assistance
+                case 033: {   // FADD
+                this.setEffectiveAddress(opcode);
+
+                if (R > 1) {
+                bus.post(new MessageChanged("FADD error: FR must be 0 or 1"));
+                break;
+                }
+
+                int operand;
+                if (I == 1) {
+                int indirectAddr = cache.load(effectiveAddress) & 0x7FF;
+                operand = cache.load(indirectAddr) & 0xFFFF;
+                } else {
+                operand = cache.load(effectiveAddress) & 0xFFFF;
+                }
+
+                FR[R] = floatingAdd(FR[R], operand, false);
+                bus.post(new MessageChanged("FADD complete on FR" + R));
+                break;
+            }
+                case 034: {   // FSUB
+                this.setEffectiveAddress(opcode);
+
+                if (R > 1) {
+                bus.post(new MessageChanged("FSUB error: FR must be 0 or 1"));
+                break;
+                }
+
+                int operand;
+                if (I == 1) {
+                int indirectAddr = cache.load(effectiveAddress) & 0x7FF;
+                operand = cache.load(indirectAddr) & 0xFFFF;
+                } else {
+                operand = cache.load(effectiveAddress) & 0xFFFF;
+                }
+
+                FR[R] = floatingAdd(FR[R], operand, true);
+                bus.post(new MessageChanged("FSUB complete on FR" + R));
+                break;
+            }
+
+                case 035: {   // VADD
+                this.setEffectiveAddress(opcode);
+
+                int length = FR[R];
+                int ptr1 = cache.load(effectiveAddress);
+                int ptr2 = cache.load(effectiveAddress + 1);
+
+                for (int i = 0; i < length; i++) {
+                    int v1 = cache.load(ptr1 + i);
+                    int v2 = cache.load(ptr2 + i);
+
+                int result = (v1 + v2) & 0xFFFF;
+                cache.store(ptr1 + i, result);
+
+                memory.MAR = ptr1 + i;
+                memory.MBR = result;
+                }
+
+                bus.post(new MessageChanged("VADD done length " + length));
+                break;
+            }
+
+                case 036: {   // VSUB
+                this.setEffectiveAddress(opcode);
+
+                int length = FR[R];
+                int ptr1 = cache.load(effectiveAddress);
+                int ptr2 = cache.load(effectiveAddress + 1);
+
+                for (int i = 0; i < length; i++) {
+                    int v1 = cache.load(ptr1 + i);
+                    int v2 = cache.load(ptr2 + i);
+
+                int result = (v1 - v2) & 0xFFFF;
+                cache.store(ptr1 + i, result);
+
+                memory.MAR = ptr1 + i;
+                memory.MBR = result;
+                }
+
+                bus.post(new MessageChanged("VSUB done length " + length));
+                break;
+            }
+
+                case 037: {   // CNVRT
+                this.setEffectiveAddress(opcode);
+
+                int memValue = cache.load(effectiveAddress) & 0xFFFF;
+
+                if (GPR[R] == 0) {
+                // Convert floating to fixed
+                GPR[R] = floatingToFixed(memValue);
+                } else {
+                // Convert fixed to floating (goes into FR0 always)
+                FR[0] = fixedToFloating(memValue);
+                }
+
+                bus.post(new MessageChanged("CNVRT executed"));
+                break;
+            }
+                case 050: {   // LDFR
+                this.setEffectiveAddress(opcode);
+
+                if (R > 1) {
+                bus.post(new MessageChanged("LDFR error: FR must be 0 or 1"));
+                break;
+                }
+
+                FR[R] = cache.load(effectiveAddress) & 0xFFFF;
+                bus.post(new MessageChanged("LDFR loaded FR" + R));
+                break;
+            }
+                case 051: {   // STFR
+                this.setEffectiveAddress(opcode);
+
+                if (R > 1) {
+                bus.post(new MessageChanged("STFR error: FR must be 0 or 1"));
+                break;
+                }
+
+                cache.store(effectiveAddress, FR[R]);
+
+                memory.MAR = effectiveAddress;
+                memory.MBR = FR[R];
+
+                bus.post(new MessageChanged("STFR stored FR" + R));
+                break;
+            }
+
+
                 case 070: { // MLT rx, ry
                     try {
                         int rx = (IR >> 8) & 0x03;
@@ -1440,6 +1578,62 @@ public class CPU implements AutoCloseable {
                 e.printStackTrace();
             }
         }
+    }
+    //written with GPT assistance
+    private int floatingAdd(int f1, int f2, boolean subtract) {
+        int s1 = (f1 >> 15) & 1;
+        int e1 = (f1 >> 8) & 0x7F;
+        int m1 = (f1 & 0xFF) | 0x100;
+
+        int s2 = (f2 >> 15) & 1;
+        int e2 = (f2 >> 8) & 0x7F;
+        int m2 = (f2 & 0xFF) | 0x100;
+
+        if (subtract) s2 ^= 1;
+
+        while (e1 > e2) { m2 >>= 1; e2++; }
+        while (e2 > e1) { m1 >>= 1; e1++; }
+
+        if (s1 == 1) m1 = -m1;
+        if (s2 == 1) m2 = -m2;
+
+        int result = m1 + m2;
+        int sign = result < 0 ? 1 : 0;
+        result = Math.abs(result);
+
+        while (result > 0x1FF) result >>= 1, e1++;
+        while (result < 0x100 && result != 0) result <<= 1, e1--;
+
+        return (sign << 15) | ((e1 & 0x7F) << 8) | (result & 0xFF);
+    }
+
+    //witten with GPT assistance
+    private int fixedToFloating(int val) {
+        int sign = val < 0 ? 1 : 0;
+        val = Math.abs(val);
+        int exp = 0;
+
+        while (val > 255) {
+            val >>= 1;
+            exp++;
+        }
+
+        exp &= 0x7F;
+        return (sign << 15) | (exp << 8) | (val & 0xFF);
+    }
+    //witten with GPT assistance
+    private int floatingToFixed(int val) {
+        int sign = (val >> 15) & 1;
+        int exp = (val >> 8) & 0x7F;
+        int mant = val & 0xFF;
+        mant |= 0x100;
+
+        while (exp > 0) {
+            mant <<= 1;
+            exp--;
+        }
+
+        return sign == 1 ? -mant : mant;
     }
 
     @Override
