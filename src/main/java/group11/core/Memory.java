@@ -55,8 +55,8 @@ public class Memory {
     }
 
     public void writeMemoryDirect(int address, int data) {
-                checkAddress(address);
-                      memory[MAR] = MBR;
+        checkAddress(address);
+        memory[MAR] = MBR;
     }
 
     public void reset() {
@@ -73,11 +73,13 @@ public class Memory {
         }
     }
 
-    public void dump(int start, int end) {
+    public String dump(int start, int end) {
         checkAddress(start);
         checkAddress(end);
+        StringBuilder blocks = new StringBuilder();
         for (int i = start; i <= end; i++) {
-            System.out.printf("Addr %04d : %04X\n", i, memory[i]);
+            blocks.append("  address " + i + " value: " + memory[i]);
         }
+        return blocks.toString();
     }
 }

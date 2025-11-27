@@ -1,118 +1,177 @@
-             	              LOC 6
-000006 015001	              AIR 2,1                 ; R2 = 1
-000007 063154	              SRC 2,6,L,L             ; R2 = 0o0100
-000010 015030	              AIR 2,24                ; +24(dec) = +0o30  => R2 = 0o0130
-000011 005026	              STR 2,0,22
-000012 102226	              LDX 2,22                ; IX2 = 0o0130
-000013 002213	              LDR 0,2,11             ; R0 := M[X2+11] = ZERO = 0
-000014 014003	              AIR 0,3                ; R0 := 0003₈
-000015 062154	              SRC 0,6,L,L            ; R0 := 0300₈
-000016 004024	              STR 0,0,20             ; [0020] = 0300₈
-000017 102124	              LDX 1,20               ; IX1 := 0300₈
-000020 002024	              LDR 0,0,20
-000021 004027	              STR 0,0,23
-000022 002613	              LDR 1,2,11
-000023 014424	              AIR 1,20
-000024 144010	              OUT 0,1
-000025 142000	              IN 0,0
-000026 102124	              LDX 1,20
-000027 002024	              LDR 0,0,20
-000030 004027	              STR 0,0,23
-000031 002613	              LDR 1,2,11
-000032 014424	              AIR 1,20
-000033 102127	PLOOP:        LDX 1,23
-000034 003500	              LDR 3,1,0
-000035 145430	              OUT 3,3
-000036 002027	              LDR 0,0,23
-000037 014001	              AIR 0,1
-000040 004027	              STR 0,0,23
-000041 034433	              SOB 1,0,PLOOP
-000042 003613	              LDR 3,2,11            ; ---- Stage 3: read single target number (count = 1) ----
-000043 015401	              AIR 3,1
-000044 002024	              LDR 0,0,20
-000045 014024	              AIR 0,20
-000046 004025	              STR 0,0,21
-000047 144010	              OUT 0,1
-000050 142000	              IN  0,0
-000051 102125	              LDX 1,21
-000052 003500	              LDR 3,1,0
-000053 005615	              STR 3,2,13              ; Mirror TARGET into X2 scratch so we can use small offsets in the loop TARGETX := R3  (at X2+13)
-000054 002024	              LDR 0,0,20              ; Reset pointer and seed from first element at base 0300 R0 := 0300
-000055 004027	              STR 0,0,23              ; [0023] := 0300
-000056 003613	              LDR 3,2,11              ; R3 := 0 (ZERO via X2+11). Next lines set up scan loop code base 'page'
-000057 015401	              AIR 3,1                 ; R3 := 1
-000060 063554	              SRC 3,6,L,L             ; R3 := 0100₈
-000061 005432	              STR 3,0,26              ; [0026] := 0100₈   ; choose any free low cell
-000062 102332	              LDX 3,26                ; IX3 := 0100₈
-000063 014424	              AIR 1,20                ; R1 := 20 total elements
-000064 102127	              LDX 1,23                ;  ---- Seed DIFFMIN and BESTVAL from first element ---- X1 := [0023]
-000065 003100	              LDR 2,1,0               ; R2 := M[X1] (first value)
-000066 005216	              STR 2,2,14              ; CURVALX := R2
-000067 013215	              SMR 2,2,13              ; R2 := |CURVALX - TARGETX| R2 := R2 - M[TARGETX]
-000070 037335	              JGE 2,3,INIT_OK
-000071 002215	              LDR 0,2,13              ; R0 := TARGETX
-000072 012216	              SMR 0,2,14              ; R0 := target - value
-000073 004217	              STR 0,2,15              ; DIFFABSX := |diff|
-000074 003217	              LDR 2,2,15              ; R2 := |diff|
-000075 005220	INIT_OK:      STR 2,2,16              ; DIFFMINX := |diff(first)|
-000076 003616	              LDR 3,2,14              ; R3 := first value
-000077 005621	              STR 3,2,17              ; BESTVALX := first value
-000100 002027	              LDR 0,0,23              ; advance ptr; set remaining count to 19 R0 := ptr
-000101 014001	              AIR 0,1                 ; R0++
-000102 004027	              STR 0,0,23              ; [0023] := ptr+1
-000103 002613	              LDR 1,2,11              ; R1 := 0. we have to zero so that AIR can set to 19 for remaining loop iters on the next line
-000104 014423	              AIR 1,19                ; R1 := 19
-000105 102127	SCAN_LOOP:    LDX   1,23             ; X1 := [0023]
-000106 003100	              LDR   2,1,0            ; R2 := M[X1]        (current value)
-000107 005216	              STR   2,2,14           ; CURVALX := R2
-000110 013215	              SMR   2,2,13           ; R2 := CURVALX - TARGETX
-000111 037316	              JGE   2,3,HAVE_ABS     ; if >=0, R2 already holds |diff|
-000112 002215	              LDR   0,2,13           ; R0 := TARGETX
-000113 012216	              SMR   0,2,14           ; R0 := TARGETX - CURVALX
-000114 004217	              STR   0,2,15           ; DIFFABSX := |diff|
-000115 003217	              LDR   2,2,15           ; R2 := |diff|
-000116 005217	HAVE_ABS:     STR   2,2,15           ; DIFFABSX := |diff| (also for diff >= 0)**   
-000117 002220	              LDR   0,2,16            ; R0 := DIFFMINX
-000120 012217	              SMR   0,2,15            ; R0 := DIFFMINX - |diff|
-000121 036323	              JGE   0,3,TAKE_NEW_MIN  ; **FIX**: test R0 (the compare result), not R2
-000122 026326	              JMA   3,STEP_PTR
-000123 005220	TAKE_NEW_MIN: STR   2,2,16            ; DIFFMINX := |diff|
-000124 003616	              LDR   3,2,14            ; R3 := CURVALX
-000125 005621	              STR   3,2,17            ; BESTVALX := R3
-000126 002027	STEP_PTR:     LDR   0,0,23           ; R0 := ptr; Move pointer forward by 1 and loop back
-000127 014001	              AIR   0,1              ; R0 := ptr + 1
-000130 004027	              STR   0,0,23           ; [0023] := ptr+1
-000131 034705	              SOB   1,3,SCAN_LOOP    ; SOB decrements R1 and branches back to SCAN_LOOP while R1 > 0. When R1 becomes 0, it falls through to SCAN_DONE.
-000132 002221	SCAN_DONE:    LDR 0,2,17      ; R0 := BESTVALX
-000133 002620	              LDR 1,2,16      ; R1 := DIFFMINX
-000134 144030	              OUT 0,3         ; print best value
-000135 144430	              OUT 1,3         ; print min diff
-000136 000000	              HLT
-000137 000000	POOL_BASE:    DATA 0        ; +0 (anchor; value unused)
-000140 000000	PAD1:         DATA 0        ; +1
-000141 000000	PAD2:         DATA 0        ; +2
-000142 000000	PAD3:         DATA 0        ; +3
-000143 000000	PAD4:         DATA 0        ; +4
-000144 000000	PAD5:         DATA 0        ; +5
-000145 000000	PAD6:         DATA 0        ; +6
-000146 000000	PAD7:         DATA 0        ; +7
-000147 000000	PAD8:         DATA 0        ; +8
-000150 000000	PAD9:         DATA 0        ; +9
-000151 000000	PAD10:        DATA 0        ; +10
-000152 000000	ZERO:         DATA 0        ; +11  <-- used by LDR *,2,11
-000153 000001	ONE:          DATA 1        ; +12
-000154 000024	COUNT20:      DATA 20       ; +13
-000155 37777777777	NEG1:         DATA -1       ; +14
-000156 000000	TARGETX:      DATA 0        ; +15 ; X2-based scratch (use offsets in code if needed)
-000157 000000	CURVALX:      DATA 0        ; +16
-000160 000000	DIFFABSX:     DATA 0        ; +17
-000161 000000	DIFFMINX:     DATA 0        ; +18
-000162 000000	BESTVALX:     DATA 0        ; +19
-000163 000000	TARGET:       DATA 0        ; globals (kept for compatibility)
-000164 000000	WORKPTR:      DATA 0
-000165 000000	DIFFABS:      DATA 0
-000166 000000	DIFFMIN:      DATA 0
-000167 000000	CURVAL:       DATA 0
-000170 000000	BESTVAL:      DATA 0
+             	        LOC 6                      ; First usable address (0–5 reserved)
+             	
+000006 102110	START:  LDX  1,DATA_PAGE_BASE      ; IX1 = 96 (0o140), base of data page
+000007 026011	        JMA  0,MAIN                ; Jump over DATA_PAGE_BASE to MAIN
+             	
+000010 000140	DATA_PAGE_BASE:  Data 96           ; 96 decimal = 0o140
+             	
+000011 142020	MAIN:   IN   0,2                   ; Load paragraph from file into memory at 300 (null-terminated)
+             	
+000012 002504	        LDR  1,1,PAR_START         ; R1 = paragraph start address (300) from data page
+000013 030146	        JSR  1,PRINT_STRING_IND,1  ; Print paragraph via PRINT_STRING
+             	
+000014 002111	        LDR  0,1,NEWLINE_CONST     ; R0 = '\n'
+000015 144010	        OUT  0,1                   ; Print newline
+             	
+000016 002510	        LDR  1,1,PROMPT_ADDR       ; R1 = address of PROMPT_STR
+000017 030146	        JSR  1,PRINT_STRING_IND,1  ; Print "Enter word: "
+             	
+000020 002107	        LDR  0,1,WORD_BASE         ; R0 = base where IN 0,0 will store chars (500)
+000021 142000	        IN   0,0                   ; Read word from console into memory at WORD_BASE (null-terminated)
+             	
+000022 002104	        LDR  0,1,PAR_START         ; R0 = 300
+000023 004112	        STR  0,1,PAR_PTR           ; PAR_PTR = 300
+             	
+000024 002107	        LDR  0,1,WORD_BASE         ; R0 = 500
+000025 004113	        STR  0,1,WORD_START        ; WORD_START = 500
+             	
+000026 002120	        LDR  0,1,ZERO_CONST        ; R0 = 0
+000027 004117	        STR  0,1,FOUND_FLAG        ; FOUND_FLAG = 0
+             	
+000030 002152	SCAN_LOOP: LDR  0,1,PAR_PTR,1         ; R0 = *PAR_PTR (char in paragraph)
+000031 020167	        JZ   0,1,SCAN_DONE_IND,1   ; If char == 0, jump via pointer to SCAN_DONE
+             	
+000032 030166	        JSR  1,WORD_CMP_IND,1      ; Compare substring at PAR_PTR with search word
+             	
+000033 002516	        LDR  1,1,MATCH_FLAG        ; R1 = MATCH_FLAG (set by WORD_CMP)
+000034 020570	        JZ   1,1,ADVANCE_CHAR_IND,1 ; If 0, no match here; advance PAR_PTR
+             	
+000035 002121	        LDR  0,1,ONE_CONST         ; R0 = 1
+000036 004117	        STR  0,1,FOUND_FLAG        ; FOUND_FLAG = 1
+000037 026167	        JMA  1,SCAN_DONE_IND,1     ; Break out of scan loop (unconditional via pointer)
+             	
+000040 002512	ADVANCE_CHAR: LDR  1,1,PAR_PTR           ; R1 = PAR_PTR
+000041 014401	        AIR  1,1                   ; R1 = PAR_PTR + 1
+000042 004512	        STR  1,1,PAR_PTR           ; PAR_PTR++
+000043 026030	        JMA  0,SCAN_LOOP           ; Continue scanning (SCAN_LOOP is < 32, so direct ok)
+             	
+000044 002117	SCAN_DONE: LDR  0,1,FOUND_FLAG        ; R0 = FOUND_FLAG
+000045 020171	        JZ   0,1,PRINT_NOT_FOUND_IND,1 ; If 0, jump via pointer to PRINT_NOT_FOUND
+             	
+000046 002524	        LDR  1,1,FOUND_STR_ADDR    ; R1 = address of "Found!" string
+000047 030146	        JSR  1,PRINT_STRING_IND,1  ; Print "Found!"
+000050 000000	        HLT                        ; Done
+             	
+000051 002525	PRINT_NOT_FOUND: LDR  1,1,NOT_FOUND_ADDR    ; R1 = address of "Not found" string
+000052 030146	        JSR  1,PRINT_STRING_IND,1  ; Print "Not found"
+000053 000000	        HLT                        ; Done
+             	
+000054 004505	PRINT_STRING: STR  1,1,PRINT_PTR         ; PRINT_PTR = R1 (string start)
+             	
+000055 002145	PS_LOOP: LDR  0,1,PRINT_PTR,1       ; R0 = MEM[ MEM[PRINT_PTR] ] (current char)
+000056 020173	        JZ   0,1,PS_DONE_IND,1     ; If char == 0, end of string (jump via pointer)
+             	
+000057 144010	        OUT  0,1                   ; Print char
+             	
+000060 003105	        LDR  2,1,PRINT_PTR         ; R2 = PRINT_PTR
+000061 015001	        AIR  2,1                   ; R2 = PRINT_PTR + 1
+000062 005105	        STR  2,1,PRINT_PTR         ; PRINT_PTR++
+             	
+000063 026172	        JMA  1,PS_LOOP_IND,1       ; Loop back via pointer to PS_LOOP
+             	
+000064 032000	PS_DONE: RFS  0                     ; Return to caller
+000065 002112	WORD_CMP: LDR  0,1,PAR_PTR           ; R0 = PAR_PTR (from data page)
+000066 004114	        STR  0,1,LOCAL_PAR_PTR     ; LOCAL_PAR_PTR = PAR_PTR
+             	
+000067 002113	        LDR  0,1,WORD_START        ; R0 = WORD_START
+000070 004115	        STR  0,1,WORD_PTR          ; WORD_PTR = WORD_START
+             	
+000071 002121	        LDR  0,1,ONE_CONST         ; R0 = 1
+000072 004116	        STR  0,1,MATCH_FLAG        ; Assume match until mismatch
+             	
+000073 002555	CMP_LOOP: LDR  1,1,WORD_PTR,1        ; R1 = cw = *WORD_PTR
+000074 020575	        JZ   1,1,WORD_EQ_IND,1     ; If cw == 0, reached end of search word → match
+             	
+000075 003154	        LDR  2,1,LOCAL_PAR_PTR,1   ; R2 = cp = *LOCAL_PAR_PTR
+000076 021176	        JZ   2,1,NO_MATCH_IND,1    ; If cp == 0 while cw != 0 → mismatch
+             	
+000077 005122	        STR  2,1,TMP_CP            ; TMP_CP = cp
+000100 004523	        STR  1,1,TMP_CW            ; TMP_CW = cw
+             	
+000101 002122	        LDR  0,1,TMP_CP            ; R0 = cp
+000102 012123	        SMR  0,1,TMP_CW            ; R0 = cp - cw
+000103 020177	        JZ   0,1,CHARS_EQUAL_IND,1 ; If equal, advance both pointers
+             	
+000104 026176	        JMA  1,NO_MATCH_IND,1      ; Else mismatch (jump via pointer)
+             	
+000105 002514	CHARS_EQUAL: LDR  1,1,LOCAL_PAR_PTR     ; R1 = LOCAL_PAR_PTR
+000106 014401	        AIR  1,1                   ; R1 = LOCAL_PAR_PTR + 1
+000107 004514	        STR  1,1,LOCAL_PAR_PTR     ; LOCAL_PAR_PTR++
+             	
+000110 002515	        LDR  1,1,WORD_PTR          ; R1 = WORD_PTR
+000111 014401	        AIR  1,1                   ; R1 = WORD_PTR + 1
+000112 004515	        STR  1,1,WORD_PTR          ; WORD_PTR++
+             	
+000113 026174	        JMA  1,CMP_LOOP_IND,1      ; Next characters (via pointer)
+             	
+000114 032000	WORD_EQ: RFS  0                     ; MATCH_FLAG remains 1 (full match beginning at PAR_PTR)
+             	
+000115 002120	NO_MATCH: LDR  0,1,ZERO_CONST        ; R0 = 0
+000116 004116	        STR  0,1,MATCH_FLAG        ; MATCH_FLAG = 0
+000117 032000	        RFS  0                     ; Return
+             	
+             	        LOC 100                    ; Data page base (must match DATA_PAGE_BASE value)
+             	
+000144 000454	PAR_START:        Data 300         ; Paragraph text base address
+000145 000000	PRINT_PTR:        Data 0           ; Pointer used by PRINT_STRING
+000146 000054	PRINT_STRING_IND: Data PRINT_STRING ; Indirect target for PRINT_STRING (for JSR)
+000147 000764	WORD_BASE:        Data 500         ; Base address of user-entered word
+000150 001130	PROMPT_ADDR:      Data PROMPT_STR  ; Address of prompt string
+000151 000012	NEWLINE_CONST:    Data 10          ; '\n'
+000152 000000	PAR_PTR:          Data 0           ; Current position in paragraph
+000153 000000	WORD_START:       Data 0           ; Base of search word (500)
+000154 000000	LOCAL_PAR_PTR:    Data 0           ; Local ptr used in WORD_CMP
+000155 000000	WORD_PTR:         Data 0           ; Local word ptr used in WORD_CMP
+000156 000000	MATCH_FLAG:       Data 0           ; 1 if WORD_CMP matched at current PAR_PTR
+000157 000000	FOUND_FLAG:       Data 0           ; 1 if any match found during scan
+000160 000000	ZERO_CONST:       Data 0           ; Constant 0
+000161 000001	ONE_CONST:        Data 1           ; Constant 1
+000162 000000	TMP_CP:           Data 0           ; Temp char from paragraph
+000163 000000	TMP_CW:           Data 0           ; Temp char from word
+000164 001145	FOUND_STR_ADDR:   Data FOUND_STR   ; Address of "Found!" string
+000165 001154	NOT_FOUND_ADDR:   Data NOT_FOUND_STR ; Address of "Not found" string
+000166 000065	WORD_CMP_IND:     Data WORD_CMP    ; Indirect target for WORD_CMP (for JSR)
+000167 000044	SCAN_DONE_IND:        Data SCAN_DONE
+000170 000040	ADVANCE_CHAR_IND:     Data ADVANCE_CHAR
+000171 000051	PRINT_NOT_FOUND_IND:  Data PRINT_NOT_FOUND
+000172 000055	PS_LOOP_IND:          Data PS_LOOP
+000173 000064	PS_DONE_IND:          Data PS_DONE
+000174 000073	CMP_LOOP_IND:         Data CMP_LOOP
+000175 000114	WORD_EQ_IND:          Data WORD_EQ
+000176 000115	NO_MATCH_IND:         Data NO_MATCH
+000177 000105	CHARS_EQUAL_IND:      Data CHARS_EQUAL
+             	
+             	                 LOC 600                            ; Arbitrary area for string bytes
+             	
+001130 000105	PROMPT_STR:      Data 69                   ; 'E'
+001131 000156	                 Data 110                  ; 'n'
+001132 000164	                 Data 116                  ; 't'
+001133 000145	                 Data 101                  ; 'e'
+001134 000162	                 Data 114                  ; 'r'
+001135 000040	                 Data 32                   ; ' '
+001136 000167	                 Data 119                  ; 'w'
+001137 000157	                 Data 111                  ; 'o'
+001140 000162	                 Data 114                  ; 'r'
+001141 000144	                 Data 100                  ; 'd'
+001142 000072	                 Data 58                   ; ':'
+001143 000040	                 Data 32                   ; ' '
+001144 000000	                 Data 0                    ; terminator
+001145 000106	FOUND_STR:       Data 70                   ; 'F'
+001146 000157	                 Data 111                  ; 'o'
+001147 000165	                 Data 117                  ; 'u'
+001150 000156	                 Data 110                  ; 'n'
+001151 000144	                 Data 100                  ; 'd'
+001152 000041	                 Data 33                   ; '!'
+001153 000000	                 Data 0                    ; terminator
+001154 000116	NOT_FOUND_STR:   Data 78                   ; 'N'
+001155 000157	                 Data 111                  ; 'o'
+001156 000164	                 Data 116                  ; 't'
+001157 000040	                 Data 32                   ; ' '
+001160 000146	                 Data 102                  ; 'f'
+001161 000157	                 Data 111                  ; 'o'
+001162 000165	                 Data 117                  ; 'u'
+001163 000156	                 Data 110                  ; 'n'
+001164 000144	                 Data 100                  ; 'd'
+001165 000000	                 Data 0                    ; terminator
 
 ** NO ERRORS FOUND DURING ASSEMBLY. LOAD FILE PRODUCED **

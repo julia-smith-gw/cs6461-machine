@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
+import group11.assembler.Assembler;
 import group11.core.CPU;
 import group11.core.Cache;
 import group11.core.Memory;
@@ -19,6 +20,9 @@ public class App
     public static void main( String[] args )
     {
 
+        // Assembler assembler = new Assembler();
+        // assembler.assemble();
+
         Memory memory = new Memory();
         EventBus eventBus = new EventBus();
         RomLoader romLoader = new RomLoader(memory);
@@ -28,7 +32,7 @@ public class App
             SwingUtilities.invokeLater(() -> {
                 Path defaultRom = null;
             try {
-                defaultRom = ResourceUtil.extractResourceToTemp("/test-files/load-file-program-1.txt", "rom-", ".txt");
+                defaultRom = ResourceUtil.extractResourceToTemp("/test-files/load-file-print.txt", "rom-", ".txt");
             } catch (Exception e) {
                 e.printStackTrace();
             }

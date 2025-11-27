@@ -1,0 +1,17 @@
+        LOC 20
+START:  IN   0,2                    ;Load paragraph from file via device 2 into memory at 300, null-terminated
+        LDR  1,0,PAR_START          ;R1 = paragraph start address (300)
+        JSR  0,PRINT_STRING_IND,1   ;Call PRINT_STRING indirectly
+        HLT                          ;Done
+PAR_START:        Data 300      ;Base address where IN 0,2 stored paragraph
+PRINT_PTR:        Data 0        ;Pointer used by PRINT_STRING
+PRINT_STRING_IND: Data PRINT_STRING ;Holds full address of PRINT_STRING
+PRINT_STRING: STR 1,0,PRINT_PTR ;PRINT_PTR = R1 start
+PS_LOOP:     LDR  0,0,PRINT_PTR,1 ;R0 = MEM[ MEM[PRINT_PTR] ]
+             JZ   0,0,PS_DONE   ;If char == 0, end
+             OUT  0,1           ;Print char to console printer
+             LDR  2,0,PRINT_PTR ;R2 = PRINT_PTR
+             AIR  2,1           ;R2 = PRINT_PTR + 1
+             STR  2,0,PRINT_PTR ;PRINT_PTR++
+             JMA  0,PS_LOOP     ;Next char
+PS_DONE:     RFS  0             ;Return

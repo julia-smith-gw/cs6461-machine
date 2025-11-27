@@ -803,9 +803,9 @@ public class CPU implements AutoCloseable {
                         this.PC = actualNextPC;
 
                         if (actuallyTaken) {
-                            bus.post(new MessageChanged("JZ taken: R" + R + "=0 → PC=" + this.PC));
+                        System.out.println("JZ taken: R" + R + "=0 → PC=" + this.PC);
                         } else {
-                            bus.post(new MessageChanged("JZ not taken: R" + R + "=" + GPR[R]));
+                        System.out.println("JZ not taken: R" + R + "=" + GPR[R]);
                         }
                         bus.post(new CChanged(Arrays.toString(CC)));
                     } catch (Exception e) {
@@ -896,7 +896,7 @@ public class CPU implements AutoCloseable {
                     try {
                         this.setEffectiveAddress(opcode);
                         this.PC = this.effectiveAddress;
-                        bus.post(new MessageChanged("JMA executed: PC <- " + this.PC));
+                        System.out.println("JMA executed: PC <- " + this.PC);
                     } catch (Exception e) {
                         bus.post(new MessageChanged("JMA failed: " + e.getMessage()));
                         halt();
@@ -1544,7 +1544,7 @@ public class CPU implements AutoCloseable {
 
         // we apply timer of 2000 seconds here to allow user to properly see interface
         // update.
-        this.cpuTick = new Timer(500, e -> {
+        this.cpuTick = new Timer(50, e -> {
 
             step();
             if (!running) {

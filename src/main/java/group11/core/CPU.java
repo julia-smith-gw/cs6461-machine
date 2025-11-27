@@ -17,6 +17,8 @@ import group11.events.SetIXR;
 import group11.events.SetMAR;
 import group11.events.SetMBR;
 import group11.events.SetPC;
+import group11.util.ResourceUtil;
+
 import javax.swing.Timer;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -40,7 +42,7 @@ public class CPU implements AutoCloseable {
     public int[] GPR = new int[4]; // R0-R3
     public int[] IXR = new int[4]; // X1-X3
 
-    public int[] FR = new int[2];  // FR0 and FR1
+    public int[] FR = new int[2]; // FR0 and FR1
 
     public Integer PC = null; // Program Counter
     public Integer IR = null; // Instruction Register
@@ -113,41 +115,25 @@ public class CPU implements AutoCloseable {
             if (line == null || line.trim().isEmpty()) {
                 value = 0;
             } else {
-                // gets count of numbers to accept from console input
-                int count = GPR[3] & 0xFFFF;
-                if (count <= 0)
-                    count = 20; // default
-
                 String normalized = (line == null) ? "" : line.trim();
                 String[] parts = normalized.isEmpty() ? new String[0] : normalized.split("[,\\s]+");
+                String word = parts[0];
 
-                // throw error if user did not provide all input requested
-                if (parts.length < count) {
-                    throw new InputMismatchException("User entered less than " + count + " numbers. Please try again");
-                }
-
-                // How many numbers we will actually consume
-                int n = Math.min(count, parts.length);
-                System.out.printf("IN: desired=%d, tokens_seen=%d, writing=%d, base=%04o%n",
-                        count, parts.length, n, inputBaseAddr & 0x7FF);
-                short[] numbers = new short[count];
-                System.out.printf("IN base check: R%d=%o -> base=%o%n", r, GPR[r], inputBaseAddr);
-
-                System.out.printf("IN: r=%d R[r]=%04o (%d) base=%04o (%d) desired=%d%n",
-                        r, GPR[r] & 0x7FF, GPR[r] & 0x7FF, inputBaseAddr, inputBaseAddr, count);
-                // parse numbers and store to memory
-                for (int i = 0; i < count; i++) {
-                    try {
-                        numbers[i] = Short.parseShort(parts[i]);
+                int firstCharNumber=word.charAt(0) & 0xFF;
+                for (int i =0; i < word.length(); ++i){
+                    char wordChar = word.charAt(i);
+                    // ch is 0..255, we store it into a 16-bit word
+                    int wordToInt = wordChar & 0xFF; // lower 8 bits = character
+                     try {
                         int address = (inputBaseAddr + i) & 0x7FF;
-                        cache.store(address, numbers[i]);
-                        System.out.printf("IN write addr=%04o (%d) val=%d%n", address, address, numbers[i]);
+                        cache.store(address, wordToInt);
+                        System.out.printf("IN write addr=%04o (%d) val=%d%n", address, address, wordToInt);
                     } catch (NumberFormatException e) {
                         throw new InputMismatchException(
                                 "Input from IN includes invalid numbers. Numbers must be between -32,768 and 32,767. Please try again.");
                     }
                 }
-                value = numbers[0];
+                  value = firstCharNumber;
             }
 
             // set register value to first value
@@ -526,12 +512,12 @@ public class CPU implements AutoCloseable {
                     System.out.printf("Before LDR: IXR[1]=%o IXR[2]=%o IXR[3]=%o%n", IXR[1], IXR[2], IXR[3]);
                     try {
                         this.setEffectiveAddress(opcode);
-                        System.out.println("LDR effective address R:" + R + " ix: " + IX + " i flag: " + I
+                        System.out.println("LDR effective address R: " + R + " ix: " + IX + " i flag: " + I
                                 + " effective address: " + this.effectiveAddress);
                         // Read from cache (which will load the block on miss)
                         int word = cache.load(effectiveAddress) & 0xFFFF; // ensure 16-bit
                         System.out.println(
-                                "LDR executed. Loaded from cache and or memory: " + word + "at " + effectiveAddress);
+                                "LDR executed. Loaded from cache and or memory: " + word + " at " + effectiveAddress);
                         // Update simulator-visible memory registers so bus events are correct
                         this.memory.MAR = effectiveAddress;
                         this.memory.MBR = word;
@@ -729,7 +715,6 @@ public class CPU implements AutoCloseable {
                         }
 
                         bus.post(new GPRChanged(r, GPR[r]));
-                        bus.post(new MessageChanged("AIR executed: R" + r + " = " + GPR[r]));
                         System.out.println("AIR executed: R" + r + " = " + GPR[r]);
                     } catch (Exception e) {
                         bus.post(new MessageChanged("AIR failed: " + e.getMessage()));
@@ -803,9 +788,9 @@ public class CPU implements AutoCloseable {
                         this.PC = actualNextPC;
 
                         if (actuallyTaken) {
-                            bus.post(new MessageChanged("JZ taken: R" + R + "=0 → PC=" + this.PC));
+                            System.out.println("JZ taken: R" + R + "=0 → PC=" + this.PC);
                         } else {
-                            bus.post(new MessageChanged("JZ not taken: R" + R + "=" + GPR[R]));
+                            System.out.println("JZ not taken: R" + R + "=" + GPR[R]);
                         }
                         bus.post(new CChanged(Arrays.toString(CC)));
                     } catch (Exception e) {
@@ -896,7 +881,7 @@ public class CPU implements AutoCloseable {
                     try {
                         this.setEffectiveAddress(opcode);
                         this.PC = this.effectiveAddress;
-                        bus.post(new MessageChanged("JMA executed: PC <- " + this.PC));
+                        System.out.println("JMA executed: PC <- " + this.PC);
                     } catch (Exception e) {
                         bus.post(new MessageChanged("JMA failed: " + e.getMessage()));
                         halt();
@@ -913,7 +898,7 @@ public class CPU implements AutoCloseable {
 
                         // Jump to subroutine target
                         this.PC = this.effectiveAddress;
-                        bus.post(new MessageChanged("JSR executed: Saved R3=" + GPR[3] + ", PC=" + this.PC));
+                        System.out.println("JSR executed: Saved R3=" + GPR[3] + ", PC=" + this.PC);
                     } catch (Exception e) {
                         bus.post(new MessageChanged("JSR failed: " + e.getMessage()));
                         halt();
@@ -1188,136 +1173,135 @@ public class CPU implements AutoCloseable {
                     break;
                 }
                 // 033- 51 witten with GPT assistance
-                case 033: {   // FADD
-                this.setEffectiveAddress(opcode);
+                case 033: { // FADD
+                    this.setEffectiveAddress(opcode);
 
-                if (R > 1) {
-                bus.post(new MessageChanged("FADD error: FR must be 0 or 1"));
-                break;
+                    if (R > 1) {
+                        bus.post(new MessageChanged("FADD error: FR must be 0 or 1"));
+                        break;
+                    }
+
+                    int operand;
+                    if (I == 1) {
+                        int indirectAddr = cache.load(effectiveAddress) & 0x7FF;
+                        operand = cache.load(indirectAddr) & 0xFFFF;
+                    } else {
+                        operand = cache.load(effectiveAddress) & 0xFFFF;
+                    }
+
+                    FR[R] = floatingAdd(FR[R], operand, false);
+                    bus.post(new MessageChanged("FADD complete on FR" + R));
+                    break;
+                }
+                case 034: { // FSUB
+                    this.setEffectiveAddress(opcode);
+
+                    if (R > 1) {
+                        bus.post(new MessageChanged("FSUB error: FR must be 0 or 1"));
+                        break;
+                    }
+
+                    int operand;
+                    if (I == 1) {
+                        int indirectAddr = cache.load(effectiveAddress) & 0x7FF;
+                        operand = cache.load(indirectAddr) & 0xFFFF;
+                    } else {
+                        operand = cache.load(effectiveAddress) & 0xFFFF;
+                    }
+
+                    FR[R] = floatingAdd(FR[R], operand, true);
+                    bus.post(new MessageChanged("FSUB complete on FR" + R));
+                    break;
                 }
 
-                int operand;
-                if (I == 1) {
-                int indirectAddr = cache.load(effectiveAddress) & 0x7FF;
-                operand = cache.load(indirectAddr) & 0xFFFF;
-                } else {
-                operand = cache.load(effectiveAddress) & 0xFFFF;
+                case 035: { // VADD
+                    this.setEffectiveAddress(opcode);
+
+                    int length = FR[R];
+                    int ptr1 = cache.load(effectiveAddress);
+                    int ptr2 = cache.load(effectiveAddress + 1);
+
+                    for (int i = 0; i < length; i++) {
+                        int v1 = cache.load(ptr1 + i);
+                        int v2 = cache.load(ptr2 + i);
+
+                        int result = (v1 + v2) & 0xFFFF;
+                        cache.store(ptr1 + i, result);
+
+                        memory.MAR = ptr1 + i;
+                        memory.MBR = result;
+                    }
+
+                    bus.post(new MessageChanged("VADD done length " + length));
+                    break;
                 }
 
-                FR[R] = floatingAdd(FR[R], operand, false);
-                bus.post(new MessageChanged("FADD complete on FR" + R));
-                break;
-            }
-                case 034: {   // FSUB
-                this.setEffectiveAddress(opcode);
+                case 036: { // VSUB
+                    this.setEffectiveAddress(opcode);
 
-                if (R > 1) {
-                bus.post(new MessageChanged("FSUB error: FR must be 0 or 1"));
-                break;
+                    int length = FR[R];
+                    int ptr1 = cache.load(effectiveAddress);
+                    int ptr2 = cache.load(effectiveAddress + 1);
+
+                    for (int i = 0; i < length; i++) {
+                        int v1 = cache.load(ptr1 + i);
+                        int v2 = cache.load(ptr2 + i);
+
+                        int result = (v1 - v2) & 0xFFFF;
+                        cache.store(ptr1 + i, result);
+
+                        memory.MAR = ptr1 + i;
+                        memory.MBR = result;
+                    }
+
+                    bus.post(new MessageChanged("VSUB done length " + length));
+                    break;
                 }
 
-                int operand;
-                if (I == 1) {
-                int indirectAddr = cache.load(effectiveAddress) & 0x7FF;
-                operand = cache.load(indirectAddr) & 0xFFFF;
-                } else {
-                operand = cache.load(effectiveAddress) & 0xFFFF;
+                case 037: { // CNVRT
+                    this.setEffectiveAddress(opcode);
+
+                    int memValue = cache.load(effectiveAddress) & 0xFFFF;
+
+                    if (GPR[R] == 0) {
+                        // Convert floating to fixed
+                        GPR[R] = floatingToFixed(memValue);
+                    } else {
+                        // Convert fixed to floating (goes into FR0 always)
+                        FR[0] = fixedToFloating(memValue);
+                    }
+
+                    bus.post(new MessageChanged("CNVRT executed"));
+                    break;
                 }
+                case 050: { // LDFR
+                    this.setEffectiveAddress(opcode);
 
-                FR[R] = floatingAdd(FR[R], operand, true);
-                bus.post(new MessageChanged("FSUB complete on FR" + R));
-                break;
-            }
+                    if (R > 1) {
+                        bus.post(new MessageChanged("LDFR error: FR must be 0 or 1"));
+                        break;
+                    }
 
-                case 035: {   // VADD
-                this.setEffectiveAddress(opcode);
-
-                int length = FR[R];
-                int ptr1 = cache.load(effectiveAddress);
-                int ptr2 = cache.load(effectiveAddress + 1);
-
-                for (int i = 0; i < length; i++) {
-                    int v1 = cache.load(ptr1 + i);
-                    int v2 = cache.load(ptr2 + i);
-
-                int result = (v1 + v2) & 0xFFFF;
-                cache.store(ptr1 + i, result);
-
-                memory.MAR = ptr1 + i;
-                memory.MBR = result;
+                    FR[R] = cache.load(effectiveAddress) & 0xFFFF;
+                    bus.post(new MessageChanged("LDFR loaded FR" + R));
+                    break;
                 }
+                case 051: { // STFR
+                    this.setEffectiveAddress(opcode);
 
-                bus.post(new MessageChanged("VADD done length " + length));
-                break;
-            }
+                    if (R > 1) {
+                        bus.post(new MessageChanged("STFR error: FR must be 0 or 1"));
+                        break;
+                    }
 
-                case 036: {   // VSUB
-                this.setEffectiveAddress(opcode);
+                    cache.store(effectiveAddress, FR[R]);
 
-                int length = FR[R];
-                int ptr1 = cache.load(effectiveAddress);
-                int ptr2 = cache.load(effectiveAddress + 1);
+                    memory.MAR = effectiveAddress;
+                    memory.MBR = FR[R];
 
-                for (int i = 0; i < length; i++) {
-                    int v1 = cache.load(ptr1 + i);
-                    int v2 = cache.load(ptr2 + i);
-
-                int result = (v1 - v2) & 0xFFFF;
-                cache.store(ptr1 + i, result);
-
-                memory.MAR = ptr1 + i;
-                memory.MBR = result;
+                    bus.post(new MessageChanged("STFR stored FR" + R));
+                    break;
                 }
-
-                bus.post(new MessageChanged("VSUB done length " + length));
-                break;
-            }
-
-                case 037: {   // CNVRT
-                this.setEffectiveAddress(opcode);
-
-                int memValue = cache.load(effectiveAddress) & 0xFFFF;
-
-                if (GPR[R] == 0) {
-                // Convert floating to fixed
-                GPR[R] = floatingToFixed(memValue);
-                } else {
-                // Convert fixed to floating (goes into FR0 always)
-                FR[0] = fixedToFloating(memValue);
-                }
-
-                bus.post(new MessageChanged("CNVRT executed"));
-                break;
-            }
-                case 050: {   // LDFR
-                this.setEffectiveAddress(opcode);
-
-                if (R > 1) {
-                bus.post(new MessageChanged("LDFR error: FR must be 0 or 1"));
-                break;
-                }
-
-                FR[R] = cache.load(effectiveAddress) & 0xFFFF;
-                bus.post(new MessageChanged("LDFR loaded FR" + R));
-                break;
-            }
-                case 051: {   // STFR
-                this.setEffectiveAddress(opcode);
-
-                if (R > 1) {
-                bus.post(new MessageChanged("STFR error: FR must be 0 or 1"));
-                break;
-                }
-
-                cache.store(effectiveAddress, FR[R]);
-
-                memory.MAR = effectiveAddress;
-                memory.MBR = FR[R];
-
-                bus.post(new MessageChanged("STFR stored FR" + R));
-                break;
-            }
-
 
                 case 070: { // MLT rx, ry
                     try {
@@ -1448,7 +1432,7 @@ public class CPU implements AutoCloseable {
                 }
 
                 case 061: { // IN r, devid
-                    System.out.println("AWAITING IN");
+        
                     int r = (IR >> 8) & 0x03;
                     int devid = (IR >> 3) & 0x1F;
                     if ((r < 0 || r > 3)) {
@@ -1467,6 +1451,38 @@ public class CPU implements AutoCloseable {
                             cpuTick.stop();
                         }
 
+                    } else if (devid == 2) {
+                        int paragraphBase = 300;
+                        int addr = paragraphBase;
+
+                        Path defaultRom = null;
+                        try {
+                            defaultRom = ResourceUtil.extractResourceToTemp("/test-files/program2-paragraph.txt",
+                                    "rom-", ".txt");
+                        } catch (Exception e) {
+                            bus.post(new MessageChanged("IN failed: " + e.getMessage()));
+                            halt();
+                            e.printStackTrace();
+                        }
+                        try (java.io.Reader reader = new java.io.InputStreamReader(
+                                new java.io.FileInputStream(defaultRom.toString()),
+                                java.nio.charset.StandardCharsets.US_ASCII)) {
+
+                            int ch;
+                            while ((ch = reader.read()) != -1 && addr < 2048) {
+                                // ch is 0..255, we store it into a 16-bit word
+                                int word = ch & 0xFF; // lower 8 bits = character
+                                cache.store(addr, word);
+                                memory.writeMemory(addr, word);
+                                System.out.println("WRITE char " + ch + " as integer word " + word + " at " + addr);
+                                addr++;
+                            }
+                        System.out.println("memory at 300-469 after IN write");
+                        System.out.println(this.memory.dump(300, 469));
+                        } catch (Exception e) {
+                            bus.post(new MessageChanged("IN failed: " + e.getMessage()));
+                            halt();
+                        }
                     } else {
                         // your existing device path (if any)
                         int value = 0;
@@ -1479,7 +1495,7 @@ public class CPU implements AutoCloseable {
                     try {
                         int r = (IR >> 8) & 0x03; // [9..8] OK
                         int devid = (IR >> 3) & 0x1F; // [7..3] ✅
-                        int value = GPR[r] & 0xFFFF;
+                        int value = GPR[r] & 0xFF;
                         if ((r < 0 || r > 3)) {
                             throw new IllegalArgumentException("OUT: r must be 0, 1, 2, 3.");
                         }
@@ -1488,19 +1504,13 @@ public class CPU implements AutoCloseable {
                             throw new IllegalArgumentException("OUT:s devid must be 1 (printer) or 3-31 (misc)");
                         }
                         if (devid == 1) { // console / guidance
-                            int base = GPR[0] & 0x7FF; // base address lives in R0
-                            int count = GPR[3] & 0xFFFF; // count lives in R3
-                            if (count <= 0)
-                                count = 20; // default if unset
+                            char ch = (char) value;
+                            this.bus.post(new MessageChanged("" + ch + ""));
                             System.out.printf(
                                     "OUT sanity: R0=%04o R1=%04o R2=%04o R3(dec)=%d (octal %06o) IR=%06o MBR=%06o\n",
                                     GPR[0] & 0x7FF, GPR[1] & 0x7FF, GPR[2] & 0x7FF, GPR[3] & 0xFFFF,
                                     GPR[3] & 0xFFFF, IR & 0xFFFF, memory.MBR & 0xFFFF);
-                            this.bus.post(new MessageChanged(String.format(
-                                    "Enter %d numbers (decimal). They will be stored at %04o..%04o.",
-                                    count, base, (base + count - 1) & 0x7FF)));
                         } else {
-                            this.bus.post(new MessageChanged("OUT dbg: r=" + r + " devid=" + devid + " val=" + value));
                             System.out.println("OUT dbg: r=" + r + " devid=" + devid + " val=" + value);
                         }
 
@@ -1544,7 +1554,7 @@ public class CPU implements AutoCloseable {
 
         // we apply timer of 2000 seconds here to allow user to properly see interface
         // update.
-        this.cpuTick = new Timer(500, e -> {
+        this.cpuTick = new Timer(0, e -> {
 
             step();
             if (!running) {
@@ -1579,7 +1589,8 @@ public class CPU implements AutoCloseable {
             }
         }
     }
-    //written with GPT assistance
+
+    // written with GPT assistance
     private int floatingAdd(int f1, int f2, boolean subtract) {
         int s1 = (f1 >> 15) & 1;
         int e1 = (f1 >> 8) & 0x7F;
@@ -1601,13 +1612,19 @@ public class CPU implements AutoCloseable {
         int sign = result < 0 ? 1 : 0;
         result = Math.abs(result);
 
-        while (result > 0x1FF) result >>= 1, e1++;
-        while (result < 0x100 && result != 0) result <<= 1, e1--;
+        while (result > 0x1FF) {
+             result >>= 1;
+             e1++;
+            };
+        while (result < 0x100 && result != 0) {
+            result <<= 1;
+             e1--;
+        }
 
         return (sign << 15) | ((e1 & 0x7F) << 8) | (result & 0xFF);
     }
 
-    //witten with GPT assistance
+    // witten with GPT assistance
     private int fixedToFloating(int val) {
         int sign = val < 0 ? 1 : 0;
         val = Math.abs(val);
@@ -1621,7 +1638,8 @@ public class CPU implements AutoCloseable {
         exp &= 0x7F;
         return (sign << 15) | (exp << 8) | (val & 0xFF);
     }
-    //witten with GPT assistance
+
+    // witten with GPT assistance
     private int floatingToFixed(int val) {
         int sign = (val >> 15) & 1;
         int exp = (val >> 8) & 0x7F;

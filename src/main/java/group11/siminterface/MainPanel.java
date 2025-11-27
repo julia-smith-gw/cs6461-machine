@@ -130,7 +130,7 @@ public class MainPanel implements AutoCloseable {
             }
         });
         this.messageChangedSub = bus.subscribe(MessageChanged.class, cmd -> {
-            this.messageField.setText(cmd.value());
+            this.messageField.setText(this.messageField.getText() + cmd.value());
         });
         this.cacheChangedSub = bus.subscribe(CacheChanged.class, cmd -> {
             this.cacheField.setText(cmd.cacheContent());

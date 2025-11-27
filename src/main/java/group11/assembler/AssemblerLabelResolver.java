@@ -37,6 +37,7 @@ public class AssemblerLabelResolver {
                     conversionResult.put(i,
                             new AssemblerConverterResult(-1, addressCounter, "Label cannot be redefined"));
                     this.hasErrors = true;
+                    System.out.println("label redefined: " + label);
                 } else {
                     labels.addSymbol(label, addressCounter);
                 }
@@ -50,12 +51,15 @@ public class AssemblerLabelResolver {
                         conversionResult.put(i,
                                 new AssemblerConverterResult(-1, addressCounter, "Location should be integer >=1"));
                         this.hasErrors = true;
+                         System.out.println("loc exception--less than zero");
                     } else {
                         addressCounter = newLoc;
                     }
                 } catch (Exception error) {
                     conversionResult.put(i,
                             new AssemblerConverterResult(-1, addressCounter, "Location should be integer >=1"));
+                    System.out.println("loc exception");
+                    System.out.println(error.getMessage());
                     this.hasErrors = true;
                 }
             } else {

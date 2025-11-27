@@ -1,5 +1,6 @@
 package group11.assembler;
 
+import java.awt.desktop.SystemSleepEvent;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -42,6 +43,8 @@ public class Assembler {
           labels, conversionResult);
 
       // output load file if no errors. always output listing file
+      System.out.println("convert has errors: " + converter.hasErrors);
+      System.out.println("resolver has errors: " + resolver.hasErrors);
       if (!converter.hasErrors && !resolver.hasErrors) {
         outputLoadFile(conversionResult);
       }
@@ -130,6 +133,7 @@ public class Assembler {
         if (entry != null && entry.error != null) {
           writer.newLine();
           writer.write("** ERROR: **" + entry.error);
+          System.out.println("error " +  entry.error);
         }
         writer.newLine();
         index++;

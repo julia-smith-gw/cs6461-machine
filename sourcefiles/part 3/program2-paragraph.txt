@@ -1,176 +1,88 @@
         LOC 6
-
         LDR R0,0,PARA_INIT       ; R0 = 192
-        STR R0,0,PARA_PTR        ; PARA_PTR = 192
-
-        ; R3 <- max words
-        LDR R3,0,MAXWORDS        ; R3 = max words to print/search
-
-        ; SENT = 1
+        STR R0,0,PARA_PTR        ; PARA_PTR = 192 R3 <- max words
+        LDR R3,0,MAXWORDS        ; R3 = max words to print/search ; SENT = 1
         LDR R2,0,ONE
-        STR R2,0,SENT
-
-        ; WORD = 1
+        STR R2,0,SENT            ; WORD = 1
         STR R2,0,WORD            ; reuse R2=1
-
-
-PRINT_LOOP:
-        ; R1 = current word: M[ M[PARA_PTR] ]
-        LDR R1,0,PARA_PTR,1      ; indirect via pointer variable
-
-        ; Stop print early if word == 0  (end of paragraph)
-        LDR R2,0,ZERO
+PRINT_LOOP: LDR R1,0,PARA_PTR,1  ; R1 = current word: M[ M[PARA_PTR] ] indirect via pointer variable
+        LDR R2,0,ZERO            ; Stop print early if word == 0  (end of paragraph)
         TRR R1,R2
         JNE R1,0,PRINT_CONT      ; if R1 != 0 -> continue
         JMA 0,AFTER_PRINT        ; if R1 == 0 -> exit print loop
-
-PRINT_CONT:
-        ; "Print" current word (device 3 for debug)
-        OUT R1,3
-
-        ; Check if word == '.' (46)
-        LDR R2,0,PERIOD
+PRINT_CONT:  OUT R1,3            ; "Print" current word (device 3 for debug)
+        LDR R2,0,PERIOD          ; Check if word == '.' (46)
         TRR R1,R2
-        JNE R1,0,NO_SENT_INC     ; if not '.', skip sentence update
-
-        ; sentence++
+        JNE R1,0,NO_SENT_INC     ; if not '.', skip sentence update         ; sentence++
         LDR R2,0,SENT
         AIR R2,1
-        STR R2,0,SENT
-
-        ; reset WORD = 1
+        STR R2,0,SENT            ; reset WORD = 1
         LDR R2,0,ONE
         STR R2,0,WORD
         JMA 0,NEXT_WORD
-
-NO_SENT_INC:
-        ; WORD++
-        LDR R2,0,WORD
+NO_SENT_INC: LDR R2,0,WORD                     ; WORD++
         AIR R2,1
         STR R2,0,WORD
-
-NEXT_WORD:
-        ; PARA_PTR++
+NEXT_WORD: PARA_PTR++
         LDR R0,0,PARA_PTR
         AIR R0,1
         STR R0,0,PARA_PTR
-
-        ; loop R3 times max
-        SOB R3,0,PRINT_LOOP
-
-
-AFTER_PRINT:
-        ; prepare to read 1 number into SEARCH_INIT (0340₈)
-
-        ; R0 = SEARCH_INIT (base address for input)
-        LDR R0,0,SEARCH_INIT
-        STR R0,0,SEARCH_PTR      ; SEARCH_PTR = 0340
-
-        ; R3 = 1 (we want 1 number from user)
-        LDR R3,0,ONE
-
-        ; OUT R0,1 will show generic prompt using R0 and R3
-        OUT R0,1
+        SOB R3,0,PRINT_LOOP                   ; loop R3 times max
+AFTER_PRINT: LDR R0,0,SEARCH_INIT             ; prepare to read 1 number into SEARCH_INIT (0340₈)R0 = SEARCH_INIT (base address for input)
+        STR R0,0,SEARCH_PTR                   ; SEARCH_PTR = 0340
+        LDR R3,0,ONE                          ; R3 = 1 (we want 1 number from user)
+        OUT R0,1                 ; OUT R0,1 will show generic prompt using R0 and R3
         IN  R0,0                 ; read 1 number into [SEARCH_INIT]
-
-        ; reset SENT = 1, WORD = 1 for search phase
-        LDR R2,0,ONE
+        LDR R2,0,ONE                    ; reset SENT = 1, WORD = 1 for search phase
         STR R2,0,SENT
         STR R2,0,WORD
-
-        ; reset PARA_PTR = paragraph base
-        LDR R0,0,PARA_INIT
+        LDR R0,0,PARA_INIT   ; reset PARA_PTR = paragraph base
         STR R0,0,PARA_PTR
-
-        ; R3 = MAXWORDS again (search up to same limit)
-        LDR R3,0,MAXWORDS
-
-        ; FOUND = 0
-        LDR R2,0,ZERO
+        LDR R3,0,MAXWORDS               ; R3 = MAXWORDS again (search up to same limit)
+        LDR R2,0,ZERO                         ; FOUND = 0
         STR R2,0,FOUND
-
-
-SEARCH_LOOP:
-        ; current paragraph word
-        LDR R1,0,PARA_PTR,1      ; R1 = M[ M[PARA_PTR] ]
-
-        ; optional: stop at word == 0
-        LDR R2,0,ZERO
+SEARCH_LOOP: LDR R1,0,PARA_PTR,1      ; R1 = M[ M[PARA_PTR] ]  ; current paragraph word
+        LDR R2,0,ZERO       ; optional: stop at word == 0
         TRR R1,R2
         JNE R1,0,SEARCH_CONT
         JMA 0,SEARCH_DONE        ; end of paragraph
-
-SEARCH_CONT:
-        ; search word in R2 = M[ M[SEARCH_PTR] ]
-        LDR R2,0,SEARCH_PTR,1
+SEARCH_CONT: LDR R2,0,SEARCH_PTR,1     ; search word in R2 = M[ M[SEARCH_PTR] ]
         TRR R1,R2
         JNE R1,0,SEARCH_WORD_NEXT
-
-        
-        ; FOUND = 1
-        LDR R2,0,ONE
+        LDR R2,0,ONE            ; FOUND = 1
         STR R2,0,FOUND
-
-        ; print found word
-        OUT R1,3
-
-        ; print sentence number
-        LDR R2,0,SENT
+        OUT R1,3                      ; print found word
+        LDR R2,0,SENT                         ; print sentence number
         OUT R2,3
-
-        ; print word number
-        LDR R2,0,WORD
+        LDR R2,0,WORD                       ; print word number
         OUT R2,3
-
         JMA 0,END_PROGRAM
-
-SEARCH_WORD_NEXT:
-        ; check period: word == '.'
-        LDR R2,0,PERIOD
+SEARCH_WORD_NEXT: LDR R2,0,PERIOD       ; check period: word == '.'
         TRR R1,R2
         JNE R1,0,SEARCH_NOT_PERIOD
-
-        ; new sentence: SENT++, WORD = 1
-        LDR R2,0,SENT
+        LDR R2,0,SENT     ; new sentence: SENT++, WORD = 1
         AIR R2,1
         STR R2,0,SENT
-
         LDR R2,0,ONE
         STR R2,0,WORD
         JMA 0,SEARCH_ADVANCE
-
-SEARCH_NOT_PERIOD:
-        ; WORD++
-        LDR R2,0,WORD
+SEARCH_NOT_PERIOD: LDR R2,0,WORD       ; WORD++
         AIR R2,1
         STR R2,0,WORD
-
-SEARCH_ADVANCE:
-        ; PARA_PTR++
-        LDR R0,0,PARA_PTR
+SEARCH_ADVANCE: LDR R0,0,PARA_PTR      ; PARA_PTR++
         AIR R0,1
         STR R0,0,PARA_PTR
-
         SOB R3,0,SEARCH_LOOP
 
-SEARCH_DONE:
-        ; not found if FOUND == 0
-        LDR R2,0,FOUND
+SEARCH_DONE: LDR R2,0,FOUND ; not found if FOUND == 0
         JNE R2,0,END_PROGRAM     ; if FOUND != 0, just end
+        OUT R2,3                ; print 0 (or treat as "NOT FOUND" code)
 
-        ; print 0 (or treat as "NOT FOUND" code)
-        OUT R2,3
-
-END_PROGRAM:
-        HLT
-
+END_PROGRAM: HLT
 PARA_INIT:   DATA 192       ; 0300₈ paragraph base
-SEARCH_INIT: DATA 224       ; 0340₈ search word base
-
-; pointer variables (start with same values)
+SEARCH_INIT: DATA 224       ; 0340₈ search word base ; pointer variables (start with same values)
 PARA_PTR:    DATA 192
 SEARCH_PTR:  DATA 224
-
 ZERO:        DATA 0
 ONE:         DATA 1
 MAXWORDS:    DATA 60        ; max words in paragraph/search

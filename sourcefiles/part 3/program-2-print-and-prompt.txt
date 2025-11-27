@@ -1,0 +1,40 @@
+        LOC 6                              ; First usable address (0–5 reserved)
+START:  IN   0,2                           ; Load paragraph from file into memory at 300 (null-terminated)
+        LDR  1,0,PAR_START                 ; R1 = paragraph start address (300)
+        JSR  0,PRINT_STRING_IND,1          ; Call PRINT_STRING indirectly to print paragraph
+        LDR  0,0,NEWLINE_CONST             ; R0 = '\n'
+        OUT  0,1                           ; Print newline
+        LDR  1,0,PROMPT_ADDR               ; R1 = address of PROMPT_STR
+        JSR  0,PRINT_STRING_IND,1          ; Print "Enter word: "
+        LDR  0,0,WORD_BASE                 ; R0 = base where IN 0,0 will store chars
+        IN   0,0                           ; Read word from console into memory at WORD_BASE (null-terminated)
+        HLT                                ; Stop here for now (we'll extend later)
+PRINT_STRING: STR  1,0,PRINT_PTR           ; PRINT_PTR = R1 (string start)
+PS_LOOP:      LDR  0,0,PRINT_PTR,1         ; R0 = MEM[ MEM[PRINT_PTR] ] (current char)
+             JZ   0,0,PS_DONE              ; If char == 0, end of string
+             OUT  0,1                      ; Print char
+             LDR  2,0,PRINT_PTR            ; R2 = PRINT_PTR
+             AIR  2,1                      ; R2 = PRINT_PTR + 1
+             STR  2,0,PRINT_PTR            ; PRINT_PTR++
+             JMA  0,PS_LOOP                ; Next character
+PS_DONE:     RFS  0                        ; Return to caller
+PAR_START:        Data 300                 ; Paragraph text base address (where IN 0,2 stored chars)
+PRINT_PTR:        Data 0                   ; Pointer used by PRINT_STRING
+PRINT_STRING_IND: Data PRINT_STRING        ; Holds code address of PRINT_STRING (for JSR indirect)
+WORD_BASE:        Data 500                 ; Base address to store console word (user input)
+PROMPT_ADDR:      Data PROMPT_STR          ; Holds code address of PROMPT_STR
+NEWLINE_CONST:    Data 10                  ; ASCII newline '\n'
+LOC 200                            ; String bytes live elsewhere; never executed as code
+PROMPT_STR:      Data 69                   ; 'E'
+                 Data 110                  ; 'n'
+                 Data 116                  ; 't'
+                 Data 101                  ; 'e'
+                 Data 114                  ; 'r'
+                 Data 32                   ; ' '
+                 Data 119                  ; 'w'
+                 Data 111                  ; 'o'
+                 Data 114                  ; 'r'
+                 Data 100                  ; 'd'
+                 Data 58                   ; ':'
+                 Data 32                   ; ' '
+                 Data 0                    ; Terminator

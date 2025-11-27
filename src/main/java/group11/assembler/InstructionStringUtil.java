@@ -25,8 +25,6 @@ public class InstructionStringUtil {
     }
 
     public static String[] extractArgs(String[] instructionParts, int argStartIndex) {
-        System.out.println(Arrays.toString(instructionParts));
-        System.out.println(argStartIndex);
         if (instructionParts.length==1) {
             return new String[0];
         }
