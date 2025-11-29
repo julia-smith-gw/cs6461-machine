@@ -1,0 +1,258 @@
+        LOC 6
+START:  LDX  1,DATA_PAGE_BASE      ; as before
+        LDX  2,DATA_PAGE_BASE2     ; IX2 = 128 (0o200)
+        JMA  0,MAIN
+
+DATA_PAGE_BASE:   Data 224          ;  0o140
+DATA_PAGE_BASE2:  Data 256         ;  0o200
+
+MAIN:   IN   0,2                   ; Load paragraph from file into memory at 300 (null-terminated)
+        LDR  1,1,PAR_START         ; R1 = 300
+        STR  1,1,PRINT_PTR         ; PRINT_PTR = 300
+        JSR  2,PRINT_STRING_IND,1  ; Print paragraph via generic PRINT_STRING
+
+        LDR  0,1,NEWLINE_CONST     ; R0 = '\n'
+        OUT  0,1                   ; Print newline
+
+        LDR  1,1,PROMPT_ADDR       ; R1 = address of PROMPT_STR
+        STR  1,1,PRINT_PTR         ; PRINT_PTR = PROMPT_STR
+        JSR  2,PRINT_STRING_IND,1  ; Print prompt
+
+        LDR  0,1,WORD_BASE         ; R0 = base where IN 0,0 will store chars (500)
+        IN   0,0                   ; Read word from console into memory at WORD_BASE (null-terminated)
+
+        LDR  0,1,PAR_START         ; R0 = 300
+        STR  0,1,PAR_PTR           ; PAR_PTR = 300
+
+        LDR  0,1,WORD_BASE         ; R0 = 500
+        STR  0,1,WORD_START        ; WORD_START = 500
+
+        LDR  0,1,ZERO_CONST        ; R0 = 0
+        STR  0,1,FOUND_FLAG        ; FOUND_FLAG = 0
+        STR 0,1,WORD_INDEX        ; WORD_INDEX = 0       ; initialize word counter & previous char
+        LDR 0,1,NEWLINE_CONST     ; treat "before paragraph" as sentence boundary
+        STR 0,1,PREV_CHAR         ; so first non-space char becomes word #1
+
+SCAN_LOOP: LDR 2,1,PREV_CHAR         ; R2 = previous character (from last iteration)
+
+       
+        LDR 0,1,PAR_PTR,1         ; R0 := M[PAR_PTR]  ; R0 = current character from paragraph
+        STR 0,1,TMP_CP            ; save current char
+
+      
+        JZ  0,2,SCAN_DONE_IND,1   ;   ; end of paragraph? if R0 == 0 => end of text
+
+        LDR 0,1,TMP_CP         ; ---------- sentence boundary check (newline) ------; if current char == '\n', reset word index to 0
+        SMR 0,1,NEWLINE_CONST     ; R0 := char - '\n'
+        JZ  0,2,CUR_IS_NEWLINE_IND,1
+        JMA 2,AFTER_NEWLINE_CHECK_IND,1
+
+CUR_IS_NEWLINE: LDR 0,1,ZERO_CONST         ; sentence changed: reset word index
+        STR 0,1,WORD_INDEX
+        JMA 2,AFTER_NEWLINE_CHECK_IND,1
+
+AFTER_NEWLINE_CHECK: LDR 0,1,TMP_CP                ; if char is separator (space or newline), just update PREV_CHAR and advance
+        SMR 0,1,SPACE_CONST       ; char - ' '
+        JZ  0,2,HANDLE_SEP_CUR_IND,1
+        LDR 0,1,TMP_CP           ; check newline
+        SMR 0,1,NEWLINE_CONST     ; char - '\n'
+        JZ  0,2,HANDLE_SEP_CUR_IND,1
+        JMA 2,CUR_IS_NON_SEP_IND,1        ; not a separator => non-space, non-newline
+
+HANDLE_SEP_CUR: LDR 0,1,TMP_CP              ; current char is a separator: no word start here
+        STR 0,1,PREV_CHAR         ; PREV_CHAR := current char
+        JMA 2,ADVANCE_CHAR_IND,1  ; move to next character
+
+CUR_IS_NON_SEP: LDR 2,1,PREV_CHAR    ; re-load previous char into R2. determine if char is first char of word. if it's word start iff PREV_CHAR is space or newline
+        SMR 2,1,SPACE_CONST       ;  ; if PREV_CHAR == ' ' => new word R2 := prev - ' '
+        JZ  2,2,NEW_WORD_IND,1
+        LDR 2,1,PREV_CHAR          ; reload prev char to test newline
+        SMR 2,1,NEWLINE_CONST     ; R2 := prev - '\n'
+        JZ  2,2,NEW_WORD_IND,1
+        LDR 0,1,TMP_CP              ; prev char was not a separator => in middle of a word/     ; just update PREV_CHAR and advance
+        STR 0,1,PREV_CHAR
+        JMA 2,ADVANCE_CHAR_IND,1
+
+NEW_WORD: LDR 0,1,WORD_INDEX                 ; we are at the first character of a word in this sentence. increment word index
+        AIR 0,1                   ; WORD_INDEX++
+        STR 0,1,WORD_INDEX
+        LDR 0,1,TMP_CP          ; update PREV_CHAR := current char
+        STR 0,1,PREV_CHAR
+        JSR 2,WORD_CMP_IND,1         ; compare the typed word with text starting HERE
+        LDR 1,1,MATCH_FLAG          ; did we get a match?
+        JZ  1,2,ADVANCE_CHAR_IND,1   ; no match => keep scanning
+        LDR 0,1,WORD_INDEX              ; match found: record the word index where it occurred
+        STR 0,1,FOUND_WORD_INDEX
+        LDR 0,1,ONE_CONST
+        STR 0,1,FOUND_FLAG
+        JMA 2,SCAN_DONE_IND,1        ; go to result handling
+
+ADVANCE_CHAR: LDR  1,1,PAR_PTR           ; R1 = PAR_PTR
+        AIR  1,1                   ; R1 = PAR_PTR + 1
+        STR  1,1,PAR_PTR           ; PAR_PTR++
+        JMA 2,SCAN_LOOP_IND,1           ; Continue scanning (SCAN_LOOP is < 32, so direct ok)
+
+SCAN_DONE: LDR  0,1,FOUND_FLAG
+    JZ   0,2,PRINT_NOT_FOUND_IND,1
+
+    LDR  0,1,NEWLINE_CONST      ; PRINT NEWLINE
+    OUT  0,1
+    LDR 1,1,FOUND_STR_ADDR        ; R1 = address of "Found!" string
+    STR 1,1,PRINT_PTR             ; PRINT_PTR = FOUND_STR
+    JSR 2,PRINT_STRING_IND,1
+    LDR  0,1,NEWLINE_CONST        ; PRINT NEWLINE
+    OUT  0,1
+    LDR 1,1,WORD_NUM_STRING_ADDR  ; R1 = address of "Word #:" string
+    STR 1,1,PRINT_PTR             ; PRINT_PTR = WORD_NUM_STRING
+    JSR 2,PRINT_STRING_IND,1      
+    LDR  0,1,FOUND_WORD_INDEX   ; print digit for word # 
+    AMR  0,1,ASCII_ZERO_CONST
+    OUT  0,1                     ; digit
+    HLT
+
+PRINT_NOT_FOUND: LDR  1,1,NOT_FOUND_ADDR    ; R1 = address of "Not found" string
+                 STR  1,1,PRINT_PTR         ; PRINT_PTR = NOT_FOUND_STR
+                 JSR  2,PRINT_STRING_IND,1  ; generic print
+                 HLT
+
+PRINT_STRING: LDR  0,1,PRINT_PTR,1       ; R0 = MEM[ MEM[PRINT_PTR] ] (current char)
+        JZ   0,2,PS_DONE_IND,1     ; If char == 0, end of string (jump via pointer)
+
+        OUT  0,1                   ; Print char
+
+        LDR  2,1,PRINT_PTR         ; R2 = PRINT_PTR
+        AIR  2,1                   ; R2 = PRINT_PTR + 1
+        STR  2,1,PRINT_PTR         ; PRINT_PTR++
+
+        JMA 2,PRINT_STRING_IND,1      ; Loop back via pointer to PRINT_STRING
+
+PS_DONE: RFS  0                     ; Return to caller
+WORD_CMP: LDR  0,1,PAR_PTR           ; R0 = PAR_PTR (from data page)
+        STR  0,1,LOCAL_PAR_PTR     ; LOCAL_PAR_PTR = PAR_PTR
+
+        LDR  0,1,WORD_START        ; R0 = WORD_START
+        STR  0,1,WORD_PTR          ; WORD_PTR = WORD_START
+
+        LDR  0,1,ONE_CONST         ; R0 = 1
+        STR  0,1,MATCH_FLAG        ; Assume match until mismatch
+
+CMP_LOOP: LDR  1,1,WORD_PTR,1        ; R1 = cw = *WORD_PTR
+        JZ   1,2,WORD_EQ_IND,1     ; If cw == 0, reached end of search word → match
+
+        LDR  2,1,LOCAL_PAR_PTR,1   ; R2 = cp = *LOCAL_PAR_PTR
+        JZ   2,2,NO_MATCH_IND,1    ; If cp == 0 while cw != 0 → mismatch
+
+        STR  2,1,TMP_CP            ; TMP_CP = cp
+        STR  1,1,TMP_CW            ; TMP_CW = cw
+
+        LDR  0,1,TMP_CP            ; R0 = cp
+        SMR  0,1,TMP_CW            ; R0 = cp - cw
+        JZ   0,2,CHARS_EQUAL_IND,1 ; If equal, advance both pointers
+
+        JMA  2,NO_MATCH_IND,1      ; Else mismatch (jump via pointer)
+
+CHARS_EQUAL: LDR  1,1,LOCAL_PAR_PTR     ; R1 = LOCAL_PAR_PTR
+        AIR  1,1                   ; R1 = LOCAL_PAR_PTR + 1
+        STR  1,1,LOCAL_PAR_PTR     ; LOCAL_PAR_PTR++
+
+        LDR  1,1,WORD_PTR          ; R1 = WORD_PTR
+        AIR  1,1                   ; R1 = WORD_PTR + 1
+        STR  1,1,WORD_PTR          ; WORD_PTR++
+
+        JMA  2,CMP_LOOP_IND,1      ; Next characters (via pointer)
+
+WORD_EQ: RFS  0                     ; MATCH_FLAG remains 1 (full match beginning at PAR_PTR)
+
+NO_MATCH: LDR  0,1,ZERO_CONST        ; R0 = 0
+        STR  0,1,MATCH_FLAG        ; MATCH_FLAG = 0
+        RFS  0                     ; Return
+
+        LOC 228                    ; Data page base (must match DATA_PAGE_BASE value)
+
+SPACE_CONST:        Data 32         ; ' '
+NEWLINE_CONST:      Data 10         ; \n
+WORD_INDEX:         Data 0          ; current word number in sentence
+FOUND_WORD_INDEX:   Data 0          ; word number where match was found
+PREV_CHAR:          Data 10         ; previous char, init to '\n' so first word = #1
+ASCII_ZERO_CONST:   Data 48         ; '0' for decimal printing
+PAR_START:        Data 300         ; Paragraph text base address
+PRINT_PTR:        Data 0           ; Pointer used by PRINT_STRING
+WORD_BASE:        Data 500         ; Base address of user-entered word
+PROMPT_ADDR:      Data PROMPT_STR  ; Address of prompt string
+PAR_PTR:          Data 0           ; Current position in paragraph
+WORD_START:       Data 0           ; Base of search word (500)
+LOCAL_PAR_PTR:    Data 0           ; Local ptr used in WORD_CMP
+WORD_PTR:         Data 0           ; Local word ptr used in WORD_CMP
+MATCH_FLAG:       Data 0           ; 1 if WORD_CMP matched at current PAR_PTR
+FOUND_FLAG:       Data 0           ; 1 if any match found during scan
+ZERO_CONST:       Data 0           ; Constant 0
+ONE_CONST:        Data 1           ; Constant 1
+TMP_CP:           Data 0           ; Temp char from paragraph
+TMP_CW:           Data 0           ; Temp char from word
+FOUND_STR_ADDR:   Data FOUND_STR   ; Address of "Found!" string
+NOT_FOUND_ADDR:   Data NOT_FOUND_STR ; Address of "Not found" string
+WORD_NUM_STRING_ADDR: Data WORD_NUM_STRING ; Address of "Word #:" string
+
+                LOC 256
+WORD_CMP_IND:     Data WORD_CMP    ; Indirect target for WORD_CMP (for JSR)
+SCAN_DONE_IND:        Data SCAN_DONE
+ADVANCE_CHAR_IND:     Data ADVANCE_CHAR
+AFTER_NEWLINE_CHECK_IND: Data AFTER_NEWLINE_CHECK
+CUR_IS_NON_SEP_IND: Data CUR_IS_NON_SEP
+PRINT_NOT_FOUND_IND:  Data PRINT_NOT_FOUND
+SCAN_LOOP_IND: Data SCAN_LOOP
+PRINT_STRING_IND: Data PRINT_STRING ; Indirect target for PRINT_STRING (for JSR)
+PS_DONE_IND:          Data PS_DONE
+CMP_LOOP_IND:         Data CMP_LOOP
+WORD_EQ_IND:          Data WORD_EQ
+NO_MATCH_IND:         Data NO_MATCH
+CHARS_EQUAL_IND:      Data CHARS_EQUAL
+CUR_IS_NEWLINE_IND:   Data CUR_IS_NEWLINE
+HANDLE_SEP_CUR_IND:   Data HANDLE_SEP_CUR
+NEW_WORD_IND:         Data NEW_WORD
+STRING_DONE_IND:      Data 0
+
+
+                 LOC 600                            ; Arbitrary area for string bytes
+
+PROMPT_STR:      Data 69                   ; 'E'
+                 Data 110                  ; 'n'
+                 Data 116                  ; 't'
+                 Data 101                  ; 'e'
+                 Data 114                  ; 'r'
+                 Data 32                   ; ' '
+                 Data 119                  ; 'w'
+                 Data 111                  ; 'o'
+                 Data 114                  ; 'r'
+                 Data 100                  ; 'd'
+                 Data 58                   ; ':'
+                 Data 32                   ; ' '
+                 Data 0                    ; terminator
+FOUND_STR:       Data 70                   ; 'F'
+                 Data 111                  ; 'o'
+                 Data 117                  ; 'u'
+                 Data 110                  ; 'n'
+                 Data 100                  ; 'd'
+                 Data 33                   ; '!'
+                 Data 0                    ; terminator
+NOT_FOUND_STR:   Data 78                   ; 'N'
+                 Data 111                  ; 'o'
+                 Data 116                  ; 't'
+                 Data 32                   ; ' '
+                 Data 102                  ; 'f'
+                 Data 111                  ; 'o'
+                 Data 117                  ; 'u'
+                 Data 110                  ; 'n'
+                 Data 100                  ; 'd'
+                 Data 0                    ; terminator
+WORD_NUM_STRING: Data 32                   ; ' ' 
+                 Data 87                   ; 'W'
+                 Data 111                  ; 'o'
+                 Data 114                  ; 'r'
+                 Data 100                  ; 'd'
+                 Data 32                   ; ' '
+                 Data 35                   ; '#'
+                 Data 58                   ; ':'
+                 Data 32                   ; ' '
+                 Data 0                    ; terminator
+

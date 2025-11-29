@@ -56,7 +56,7 @@ public class Memory {
 
     public void writeMemoryDirect(int address, int data) {
         checkAddress(address);
-        memory[MAR] = MBR;
+        memory[address] = data;
     }
 
     public void reset() {
