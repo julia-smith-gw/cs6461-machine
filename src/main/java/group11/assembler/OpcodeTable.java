@@ -32,7 +32,7 @@ public class OpcodeTable {
         table.put("DATA", new OpcodeInfo(-02, new int[]{1, 1}, new ArgTypes[]{ArgTypes.DATA}, args -> args[0]));
         table.put("LOC", new OpcodeInfo(-01, new int[]{1, 1}, new ArgTypes[]{ArgTypes.LOCATION}, _ -> null));
         table.put("HLT", new OpcodeInfo(00, new int[] {0,0}, new ArgTypes[]{}, _ -> 0));
-        table.put("TRAP", new OpcodeInfo(030, new int[] {1,1}, new ArgTypes[]{ArgTypes.COUNT}, args-> (030 << 10) | (args[0] & 0xF)));
+        table.put("TRAP", new OpcodeInfo(030, new int[] {1,1}, new ArgTypes[]{ArgTypes.COUNT}, args-> (030 << 10) | (args[0] & 0x1F)));
         table.put("LDR", new OpcodeInfo(
                 01,
                 new int[]{3, 4},
