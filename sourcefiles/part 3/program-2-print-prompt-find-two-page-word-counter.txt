@@ -110,7 +110,9 @@ SCAN_DONE: LDR  0,1,FOUND_FLAG
     OUT  0,1                     ; digit
     HLT
 
-PRINT_NOT_FOUND: LDR  1,1,NOT_FOUND_ADDR    ; R1 = address of "Not found" string
+PRINT_NOT_FOUND: LDR  0,1,NEWLINE_CONST        ; PRINT NEWLINE
+                 OUT  0,1
+                 LDR  1,1,NOT_FOUND_ADDR    ; R1 = address of "Not found" string
                  STR  1,1,PRINT_PTR         ; PRINT_PTR = NOT_FOUND_STR
                  JSR  2,PRINT_STRING_IND,1  ; generic print
                  HLT

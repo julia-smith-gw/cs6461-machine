@@ -32,7 +32,7 @@ public class App
             SwingUtilities.invokeLater(() -> {
                 Path defaultRom = null;
             try {
-                defaultRom = ResourceUtil.extractResourceToTemp("/test-files/load-file-print.txt", "rom-", ".txt");
+                defaultRom = ResourceUtil.extractResourceToTemp("/test-files/load-file-program-2.txt", "rom-", ".txt");
             } catch (Exception e) {
                 e.printStackTrace();
             }

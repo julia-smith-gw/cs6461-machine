@@ -1548,7 +1548,7 @@ public class CPU implements AutoCloseable {
             this.cpuTick.stop();
         }
         System.out.println("program halted");
-        bus.post(new MessageChanged("Program halted"));
+        bus.post(new MessageChanged( "\n Program halted"));
     }
 
     // https://stackoverflow.com/questions/28432164/java-swing-timer-loop
