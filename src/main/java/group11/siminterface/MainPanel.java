@@ -11,6 +11,7 @@ import group11.events.IRChanged;
 import group11.events.IXRChanged;
 import group11.events.MARChanged;
 import group11.events.MBRChanged;
+import group11.events.MFRChanged;
 import group11.events.MessageChanged;
 import group11.events.BranchPredictionStatsChanged;
 import group11.events.PCChanged;
@@ -38,6 +39,7 @@ public class MainPanel implements AutoCloseable {
     private final AutoCloseable MARChangedSub;
     private final AutoCloseable MBRChangedSub;
     private final AutoCloseable IRChangedSub;
+    private final AutoCloseable MFRChangedSub;
     private final AutoCloseable messageChangedSub;
     private final AutoCloseable cacheChangedSub;
     private final AutoCloseable CChangedSub;
@@ -54,6 +56,7 @@ public class MainPanel implements AutoCloseable {
     public OctalInputWithButton GPR3Field;
     public OctalInputWithButton PCField;
     public OctalInputWithButton IRField;
+    public OctalInputWithButton MFRField;
     public OctalInputWithButton octalInputField;
     public BinaryField binaryField;
     public JTextArea messageField;
@@ -142,6 +145,11 @@ public class MainPanel implements AutoCloseable {
             branchTotalLabel.setText(Integer.toString(evt.totalBranches()));
             branchCorrectLabel.setText(Integer.toString(evt.correctPredictions()));
             branchAccuracyLabel.setText(String.format("%.1f%%", evt.accuracy() * 100.0));
+        });
+        this.MFRChangedSub = bus.subscribe(MFRChanged.class, cmd -> {
+            if (this.MFRField != null) {
+                this.MFRField.setFromOctal(cmd.value());
+            }
         });
     }
 
@@ -341,8 +349,9 @@ public class MainPanel implements AutoCloseable {
 
         errorCodes.add(ccCodeLabelAndInput);
         errorCodes.add(Box.createVerticalStrut(2));
-        errorCodes.add(new OctalInputWithButton("MFR", false, false, () -> {
-        }).buildInput());
+        this.MFRField = new OctalInputWithButton("MFR", false, false, () -> {
+        });
+        errorCodes.add(this.MFRField.buildInput());
         secondRow.add(errorCodes);
         secondRow.add(Box.createVerticalStrut(20));
 
@@ -434,6 +443,11 @@ public class MainPanel implements AutoCloseable {
         }
         try {
             this.branchStatsSub.close();
+        } catch (Exception ignored) {
+
+        }
+        try {
+            this.MFRChangedSub.close();
         } catch (Exception ignored) {
 
         }

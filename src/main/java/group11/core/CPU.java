@@ -10,6 +10,7 @@ import group11.events.IRChanged;
 import group11.events.IXRChanged;
 import group11.events.MARChanged;
 import group11.events.MBRChanged;
+import group11.events.MFRChanged;
 import group11.events.MessageChanged;
 import group11.events.PCChanged;
 import group11.events.SetGPR;
@@ -46,6 +47,7 @@ public class CPU implements AutoCloseable {
 
     public Integer PC = null; // Program Counter
     public Integer IR = null; // Instruction Register
+    public int MFR = 0; // Machine Fault Register (4-bit: 0-15)
 
     public boolean running = false;
     public Memory memory;
@@ -302,23 +304,36 @@ public class CPU implements AutoCloseable {
 
     /**
      * Gets if effective address is valid
-     * 
+     *
      * @param ignoreReserved          Whether we should ignore reserved memory
      *                                addresses for
      *                                validation (user can mess with reserved memory
      *                                outside
      *                                of run).
      * @param pendingEffectiveAddress address to check
-     * @return true if valid or throws an error if not
+     * @return true if valid or triggers machine fault if not
      */
     private boolean getIsValidAddress(Boolean ignoreReserved, boolean allowIndexingInEA, int pendingEffectiveAddress) {
-        if (pendingEffectiveAddress >= this.memory.MEMORY_SIZE
-                || pendingEffectiveAddress < 0) {
-            throw new IllegalArgumentException("Memory out of bounds access");
+        // Machine Fault 3: Illegal Memory Address beyond 2047
+        if (pendingEffectiveAddress >= this.memory.MEMORY_SIZE || pendingEffectiveAddress < 0) {
+            if (running) {
+                raiseMachineFault(3); // Triggers fault and halts
+                return false;
+            } else {
+                throw new IllegalArgumentException("Memory out of bounds access");
+            }
         }
+
+        // Machine Fault 0: Illegal Memory Access to Reserved Locations (0-5)
+        // Only enforce during program execution, not during manual front-panel operations
         if (!!ignoreReserved && !allowIndexingInEA && (pendingEffectiveAddress >= 0 && pendingEffectiveAddress <= 5)) {
-            throw new IllegalArgumentException(
-                    "Illegal memory register access at effective address " + pendingEffectiveAddress);
+            if (running) {
+                raiseMachineFault(0); // Triggers fault and halts
+                return false;
+            } else {
+                throw new IllegalArgumentException(
+                        "Illegal memory register access at effective address " + pendingEffectiveAddress);
+            }
         }
         return true;
     }
@@ -475,6 +490,7 @@ public class CPU implements AutoCloseable {
         CC = new boolean[4];
         PC = 0; // Program Counter
         IR = 0; // Instruction Register
+        MFR = 0; // Machine Fault Register
 
         FR = new int[2];
 
@@ -493,6 +509,7 @@ public class CPU implements AutoCloseable {
         this.bus.post(new MARChanged(this.memory.MAR));
         this.bus.post(new PCChanged(PC));
         this.bus.post(new IRChanged(IR));
+        this.bus.post(new MFRChanged(MFR));
         this.bus.post(new CChanged(Arrays.toString(CC)));
         this.bus.post(new MessageChanged(message));
     }
@@ -1021,6 +1038,31 @@ public class CPU implements AutoCloseable {
                     break;
                 }
 
+                case 030: { // TRAP trapcode
+                    System.out.println("TRAP exec: IR=" + Integer.toOctalString(IR));
+                    try {
+                        // TRAP instruction format (opcode 30₈):
+                        // Bits [15:10] = opcode (030)
+                        // Bits [4:0] = trap code (0-31)
+                        int trapCode = IR & 0x1F; // Extract trap code from bits [4:0]
+
+                        System.out.println("TRAP trapCode=" + trapCode);
+
+                        // Execute trap using helper method
+                        // This will:
+                        //   1. Save PC+1 to Memory[2]
+                        //   2. Read trap table base from Memory[0]
+                        //   3. Load handler address from Memory[base + trapCode]
+                        //   4. Jump to handler
+                        executeTrap(trapCode);
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged("TRAP failed: " + e.getMessage()));
+                        System.out.println("TRAP failed: " + e.getMessage());
+                        halt();
+                    }
+                    break;
+                }
+
                 // https://chatgpt.com/share/6901599b-9c2c-8007-861c-a8aa5f7043d4
                 case 031: { // SRC r, count, L/R, A/L
                     try {
@@ -1530,8 +1572,64 @@ public class CPU implements AutoCloseable {
                     break;
                 }
 
+                case 063: { // CHK r, devid
+                    System.out.println("CHK exec: IR=" + Integer.toOctalString(IR));
+                    try {
+                        // CHK instruction format (opcode 63₈):
+                        // Bits [15:10] = opcode (063)
+                        // Bits [9:8] = r (register 0-3)
+                        // Bits [7:3] = devid (device ID 0-31)
+                        int r = (IR >> 8) & 0x03; // Extract r from bits [9:8]
+                        int devid = (IR >> 3) & 0x1F; // Extract devid from bits [7:3]
+
+                        if (r < 0 || r > 3) {
+                            throw new IllegalArgumentException("CHK: r must be 0, 1, 2, 3.");
+                        }
+
+                        if (devid < 0 || devid > 31) {
+                            throw new IllegalArgumentException("CHK: devid must be 0-31.");
+                        }
+
+                        // Check device status and return in register r
+                        // Per ISA spec: 0 = device not ready, 1 = device ready
+                        int deviceStatus;
+
+                        // Device status logic - integrate with existing I/O model
+                        // For this implementation, we'll use simple heuristics:
+                        if (devid == 0) {
+                            // Keyboard (console input) - ready if not waiting for input
+                            deviceStatus = waitingForConsoleInput ? 0 : 1;
+                        } else if (devid == 1) {
+                            // Printer (console output) - always ready
+                            deviceStatus = 1;
+                        } else if (devid == 2) {
+                            // Card reader - always ready (for simplicity)
+                            deviceStatus = 1;
+                        } else {
+                            // Other devices (3-31) - assume ready
+                            deviceStatus = 1;
+                        }
+
+                        // Store device status in register r
+                        GPR[r] = deviceStatus & 0xFFFF;
+                        bus.post(new GPRChanged(r, GPR[r]));
+
+                        bus.post(new MessageChanged("CHK: Device " + devid + " status=" + deviceStatus +
+                                                    " (0=not ready, 1=ready) -> R" + r));
+                        System.out.printf("CHK executed: devid=%d, status=%d, R%d=%d%n",
+                                         devid, deviceStatus, r, GPR[r]);
+                    } catch (Exception e) {
+                        bus.post(new MessageChanged("CHK failed: " + e.getMessage()));
+                        System.out.println("CHK failed: " + e.getMessage());
+                        halt();
+                    }
+                    break;
+                }
+
                 default: {
-                    bus.post(new MessageChanged("Unknown opcode. May be data: " + opcode));
+                    // Unknown opcode triggers Machine Fault 2 (Illegal Operation Code)
+                    System.out.println("Unknown opcode: " + opcode + " (octal: " + Integer.toOctalString(opcode) + ")");
+                    raiseMachineFault(2);
                     break;
                 }
             }
@@ -1659,6 +1757,125 @@ public class CPU implements AutoCloseable {
         }
 
         return sign == 1 ? -mant : mant;
+    }
+
+    /**
+     * Raises a machine fault according to the ISA specification.
+     * Machine Fault IDs:
+     *   0 = Illegal Memory Access to Reserved Locations (0-5)
+     *   1 = Illegal TRAP code
+     *   2 = Illegal Operation Code
+     *   3 = Illegal Memory Address beyond 2047
+     *
+     * Per ISA spec:
+     *   - Store fault ID in Memory[1] and MFR register
+     *   - Save current PC in Memory[4]
+     *   - Jump to fault handler (address read from Memory[1] or fixed location)
+     *
+     * @param faultId The fault ID (0-3)
+     */
+    private void raiseMachineFault(int faultId) {
+        if (faultId < 0 || faultId > 3) {
+            throw new IllegalArgumentException("Invalid machine fault ID: " + faultId);
+        }
+
+        // Update MFR register (4-bit: 0-15, but we only use 0-3 for fault IDs)
+        MFR = faultId & 0x0F;
+        bus.post(new MFRChanged(MFR));
+
+        // Store fault ID in Memory[1] as per ISA spec
+        cache.store(1, faultId);
+        memory.writeMemory(1, faultId);
+
+        // Save current PC in Memory[4] as per ISA spec
+        cache.store(4, PC & 0xFFFF);
+        memory.writeMemory(4, PC & 0xFFFF);
+
+        // Jump to fault handler
+        // Read fault handler address from Memory[1] (using fault ID as pointer)
+        // Or use a fixed fault handler location
+        // For now, we'll halt execution and report the fault
+        String faultMsg;
+        switch (faultId) {
+            case 0:
+                faultMsg = "MACHINE FAULT 0: Illegal Memory Access to Reserved Locations (0-5)";
+                break;
+            case 1:
+                faultMsg = "MACHINE FAULT 1: Illegal TRAP Code";
+                break;
+            case 2:
+                faultMsg = "MACHINE FAULT 2: Illegal Operation Code";
+                break;
+            case 3:
+                faultMsg = "MACHINE FAULT 3: Illegal Memory Address Beyond 2047";
+                break;
+            default:
+                faultMsg = "MACHINE FAULT: Unknown fault ID " + faultId;
+        }
+
+        bus.post(new MessageChanged(faultMsg));
+        System.out.println(faultMsg + " | PC saved at Mem[4]=" + PC + ", Fault ID at Mem[1]=" + faultId);
+
+        // Halt execution (in a real implementation, would jump to fault handler)
+        halt();
+    }
+
+    /**
+     * Executes a TRAP instruction according to the ISA specification.
+     * TRAP instruction format (opcode 30₈):
+     *   - Bits [4:0] contain the trap code (0-31)
+     *
+     * Per ISA spec:
+     *   - Save (PC + 1) to Memory[2]
+     *   - Read trap table base address from Memory[0]
+     *   - Compute handler address: Memory[trapTableBase + trapCode]
+     *   - Jump to handler address
+     *
+     * @param trapCode The trap code from instruction bits [4:0]
+     */
+    private void executeTrap(int trapCode) {
+        // Validate trap code (5 bits = 0-31)
+        if (trapCode < 0 || trapCode > 31) {
+            // Invalid trap code triggers Machine Fault 1
+            raiseMachineFault(1);
+            return;
+        }
+
+        // Save return address (PC + 1) to Memory[2] as per ISA spec
+        // Note: PC has already been incremented by fetch(), so PC is already PC+1
+        int returnAddr = PC & 0xFFFF;
+        cache.store(2, returnAddr);
+        memory.writeMemory(2, returnAddr);
+
+        // Read trap table base address from Memory[0]
+        int trapTableBase = cache.load(0) & 0x7FF;
+
+        // Compute address of handler pointer: trapTableBase + trapCode
+        int handlerPtrAddr = (trapTableBase + trapCode) & 0x7FF;
+
+        // Check if handler pointer address is valid
+        if (handlerPtrAddr > 2047) {
+            raiseMachineFault(3); // Memory beyond 2047
+            return;
+        }
+
+        // Read handler address from trap table
+        int handlerAddr = cache.load(handlerPtrAddr) & 0x7FF;
+
+        // Validate handler address
+        if (handlerAddr > 2047) {
+            raiseMachineFault(3); // Memory beyond 2047
+            return;
+        }
+
+        // Jump to handler
+        PC = handlerAddr;
+
+        bus.post(new PCChanged(PC));
+        bus.post(new MessageChanged("TRAP " + trapCode + ": jumped to handler at " + handlerAddr +
+                                    " (return addr " + returnAddr + " saved at Mem[2])"));
+        System.out.printf("TRAP executed: code=%d, table_base=%o, handler_ptr_addr=%o, handler=%o, return=%o%n",
+                         trapCode, trapTableBase, handlerPtrAddr, handlerAddr, returnAddr);
     }
 
     @Override
