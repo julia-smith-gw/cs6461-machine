@@ -121,12 +121,12 @@ public class CPU implements AutoCloseable {
                 String[] parts = normalized.isEmpty() ? new String[0] : normalized.split("[,\\s]+");
                 String word = parts[0];
 
-                int firstCharNumber=word.charAt(0) & 0xFF;
-                for (int i =0; i < word.length(); ++i){
+                int firstCharNumber = word.charAt(0) & 0xFF;
+                for (int i = 0; i < word.length(); ++i) {
                     char wordChar = word.charAt(i);
                     // ch is 0..255, we store it into a 16-bit word
                     int wordToInt = wordChar & 0xFF; // lower 8 bits = character
-                     try {
+                    try {
                         int address = (inputBaseAddr + i) & 0x7FF;
                         cache.store(address, wordToInt);
                         System.out.printf("IN write addr=%04o (%d) val=%d%n", address, address, wordToInt);
@@ -136,9 +136,9 @@ public class CPU implements AutoCloseable {
                     }
                 }
                 // store 0 terminator after read-in input
-                  int address = (inputBaseAddr + word.length()) & 0x7FF;
-                  cache.store(address, 0);
-                  value = firstCharNumber;
+                int address = (inputBaseAddr + word.length()) & 0x7FF;
+                cache.store(address, 0);
+                value = firstCharNumber;
             }
 
             // set register value to first value
@@ -325,7 +325,8 @@ public class CPU implements AutoCloseable {
         }
 
         // Machine Fault 0: Illegal Memory Access to Reserved Locations (0-5)
-        // Only enforce during program execution, not during manual front-panel operations
+        // Only enforce during program execution, not during manual front-panel
+        // operations
         if (!!ignoreReserved && !allowIndexingInEA && (pendingEffectiveAddress >= 0 && pendingEffectiveAddress <= 5)) {
             if (running) {
                 raiseMachineFault(0); // Triggers fault and halts
@@ -384,7 +385,7 @@ public class CPU implements AutoCloseable {
                 getIsValidAddress(running, allowIndexingInEA, pendingEffectiveAddress);
                 // Use cache for coherence with LDR/LDX paths
                 int ptrWord = cache.load(pendingEffectiveAddress) & 0xFFFF;
-                //int ptrWord = memory.getMemoryValueAt(pendingEffectiveAddress);
+                // int ptrWord = memory.getMemoryValueAt(pendingEffectiveAddress);
                 // Keep MAR/MBR + bus in sync (like LDR path)
                 this.memory.MAR = pendingEffectiveAddress & 0x7FF;
                 this.memory.MBR = ptrWord;
@@ -530,12 +531,13 @@ public class CPU implements AutoCloseable {
                     System.out.printf("Before LDR: IXR[1]=%o IXR[2]=%o IXR[3]=%o%n", IXR[1], IXR[2], IXR[3]);
                     try {
                         this.setEffectiveAddress(opcode);
-                                   System.out.printf("LDR effective address before execution: EA=%o%n",
-                       this.effectiveAddress);
+                        System.out.printf("LDR effective address before execution: EA=%o%n",
+                                this.effectiveAddress);
                         // Read from cache (which will load the block on miss)
                         int word = cache.load(effectiveAddress) & 0xFFFF; // ensure 16-bit
                         System.out.printf(
-                                "LDR executed. Loaded from cache and or memory: word=%d from address=%o%n",  word, effectiveAddress);
+                                "LDR executed. Loaded from cache and or memory: word=%d from address=%o%n", word,
+                                effectiveAddress);
                         // Update simulator-visible memory registers so bus events are correct
                         this.memory.MAR = effectiveAddress;
                         this.memory.MBR = word;
@@ -556,8 +558,8 @@ public class CPU implements AutoCloseable {
                 case 02: {
                     try {
                         this.setEffectiveAddress(opcode);
-                              System.out.printf("STR effective address: EA=%o%n",
-                       this.effectiveAddress);
+                        System.out.printf("STR effective address: EA=%o%n",
+                                this.effectiveAddress);
                         // Update cache
                         cache.store(effectiveAddress, GPR[R] & 0xFFFF);
                         System.out.println(
@@ -581,8 +583,8 @@ public class CPU implements AutoCloseable {
                         int[] addressInfo = this.calculateEffectiveAddress(opcode);
                         R = addressInfo[1];
                         effectiveAddress = addressInfo[3];
-                 System.out.printf("LDA effective address: EA=%o%n",
-                       this.effectiveAddress);
+                        System.out.printf("LDA effective address: EA=%o%n",
+                                this.effectiveAddress);
                         GPR[R] = effectiveAddress;
                         System.out.println("LDA EXECUTED " + "effectiveAddress=" + effectiveAddress);
                         this.bus.post(new GPRChanged(addressInfo[1], GPR[addressInfo[1]]));
@@ -598,8 +600,8 @@ public class CPU implements AutoCloseable {
                 case 041: {
                     try {
                         this.setEffectiveAddress(opcode);
-            System.out.printf("LDX effective address before execution: EA=%o%n",
-                       this.effectiveAddress);
+                        System.out.printf("LDX effective address before execution: EA=%o%n",
+                                this.effectiveAddress);
                         loadIndexRegister();
                         System.out.println("LDX EXECUTED. IXR 1: " + IXR[1] + "IXR 2: " + IXR[2] + "IXR 3: " + IXR[3]);
                     } catch (Exception e) {
@@ -629,8 +631,8 @@ public class CPU implements AutoCloseable {
                     System.out.println("AMR exec: IR=" + Integer.toOctalString(IR));
                     try {
                         this.setEffectiveAddress(opcode);
-            System.out.printf("AMR effective address: EA=%o%n",
-                       this.effectiveAddress);
+                        System.out.printf("AMR effective address: EA=%o%n",
+                                this.effectiveAddress);
                         // Read via cache (fills block on miss)
                         int memValue = cache.load(effectiveAddress) & 0xFFFF;
 
@@ -667,11 +669,11 @@ public class CPU implements AutoCloseable {
                     break;
                 }
                 case 05: { // SMR r,x,address[,I]
-    
+
                     try {
                         this.setEffectiveAddress(opcode);
-                                    System.out.printf("SMR effective address: EA=%o%n",
-                       this.effectiveAddress);
+                        System.out.printf("SMR effective address: EA=%o%n",
+                                this.effectiveAddress);
                         // Read via cache (fills block on miss)
                         int memValue = cache.load(effectiveAddress) & 0xFFFF;
 
@@ -741,8 +743,8 @@ public class CPU implements AutoCloseable {
                     try {
                         int r = (IR >> 8) & 0x03; // R at bits 9..8
                         int imm5 = IR & 0x1F;
-                               System.out.printf("PAR_PTR value at octal address 000356 (decimal 238) prior to SIR:" +
-                            this.memory.dump(238, 239));
+                        System.out.printf("PAR_PTR value at octal address 000356 (decimal 238) prior to SIR:" +
+                                this.memory.dump(238, 239));
 
                         if (r < 0 || r > 3) {
                             throw new Exception("Bad register number at SIR instruction");
@@ -776,11 +778,10 @@ public class CPU implements AutoCloseable {
                 case 010: { // JZ r,x,address[,I]
                     try {
                         this.setEffectiveAddress(opcode);
-                                   System.out.printf("JZ effective address: EA=%o%n",
-                       this.effectiveAddress);
-                                 System.out.printf("PAR_PTR value at octal address 000356 (decimal 238) prior to JZ:" +
-                            this.memory.dump(238, 239));
-                        
+                        System.out.printf("JZ effective address: EA=%o%n",
+                                this.effectiveAddress);
+                        System.out.printf("PAR_PTR value at octal address 000356 (decimal 238) prior to JZ:" +
+                                this.memory.dump(238, 239));
 
                         int branchPC = (this.PC - 1) & 0x7FF; // address of this JZ
                         int fallthroughPC = this.PC; // PC was incremented in fetch()
@@ -900,8 +901,8 @@ public class CPU implements AutoCloseable {
                     try {
                         this.setEffectiveAddress(opcode);
                         this.PC = this.effectiveAddress;
-                                     System.out.printf("JMA effective address: EA=%o%n",
-                       this.effectiveAddress);
+                        System.out.printf("JMA effective address: EA=%o%n",
+                                this.effectiveAddress);
                         System.out.println("JMA executed: PC <- " + this.PC);
                     } catch (Exception e) {
                         bus.post(new MessageChanged("JMA failed: " + e.getMessage()));
@@ -913,8 +914,8 @@ public class CPU implements AutoCloseable {
                 case 014: { // JSR x,address[,I]
                     try {
                         this.setEffectiveAddress(opcode);
-                                System.out.printf("JSR effective address: EA=%o%n",
-                       this.effectiveAddress);
+                        System.out.printf("JSR effective address: EA=%o%n",
+                                this.effectiveAddress);
                         // Save return address (current PC, which already points to next instruction)
                         GPR[3] = this.PC & 0xFFFF;
                         bus.post(new GPRChanged(3, GPR[3]));
@@ -1050,10 +1051,10 @@ public class CPU implements AutoCloseable {
 
                         // Execute trap using helper method
                         // This will:
-                        //   1. Save PC+1 to Memory[2]
-                        //   2. Read trap table base from Memory[0]
-                        //   3. Load handler address from Memory[base + trapCode]
-                        //   4. Jump to handler
+                        // 1. Save PC+1 to Memory[2]
+                        // 2. Read trap table base from Memory[0]
+                        // 3. Load handler address from Memory[base + trapCode]
+                        // 4. Jump to handler
                         executeTrap(trapCode);
                     } catch (Exception e) {
                         bus.post(new MessageChanged("TRAP failed: " + e.getMessage()));
@@ -1480,7 +1481,7 @@ public class CPU implements AutoCloseable {
                 }
 
                 case 061: { // IN r, devid
-        
+
                     int r = (IR >> 8) & 0x03;
                     int devid = (IR >> 3) & 0x1F;
                     if ((r < 0 || r > 3)) {
@@ -1526,10 +1527,10 @@ public class CPU implements AutoCloseable {
                                 addr++;
                             }
 
-                        // store 0 terminator after reading in content
-                        cache.store(addr, 0);
-                        System.out.println("memory at 280-520 after IN write");
-                        System.out.println(this.memory.dump(280, 520));
+                            // store 0 terminator after reading in content
+                            cache.store(addr, 0);
+                            System.out.println("memory at 280-520 after IN write");
+                            System.out.println(this.memory.dump(280, 520));
                         } catch (Exception e) {
                             bus.post(new MessageChanged("IN failed: " + e.getMessage()));
                             halt();
@@ -1615,9 +1616,9 @@ public class CPU implements AutoCloseable {
                         bus.post(new GPRChanged(r, GPR[r]));
 
                         bus.post(new MessageChanged("CHK: Device " + devid + " status=" + deviceStatus +
-                                                    " (0=not ready, 1=ready) -> R" + r));
+                                " (0=not ready, 1=ready) -> R" + r));
                         System.out.printf("CHK executed: devid=%d, status=%d, R%d=%d%n",
-                                         devid, deviceStatus, r, GPR[r]);
+                                devid, deviceStatus, r, GPR[r]);
                     } catch (Exception e) {
                         bus.post(new MessageChanged("CHK failed: " + e.getMessage()));
                         System.out.println("CHK failed: " + e.getMessage());
@@ -1646,7 +1647,7 @@ public class CPU implements AutoCloseable {
             this.cpuTick.stop();
         }
         System.out.println("program halted");
-        bus.post(new MessageChanged( "\n Program halted"));
+        bus.post(new MessageChanged("\n Program halted"));
     }
 
     // https://stackoverflow.com/questions/28432164/java-swing-timer-loop
@@ -1705,25 +1706,35 @@ public class CPU implements AutoCloseable {
         int e2 = (f2 >> 8) & 0x7F;
         int m2 = (f2 & 0xFF) | 0x100;
 
-        if (subtract) s2 ^= 1;
+        if (subtract)
+            s2 ^= 1;
 
-        while (e1 > e2) { m2 >>= 1; e2++; }
-        while (e2 > e1) { m1 >>= 1; e1++; }
+        while (e1 > e2) {
+            m2 >>= 1;
+            e2++;
+        }
+        while (e2 > e1) {
+            m1 >>= 1;
+            e1++;
+        }
 
-        if (s1 == 1) m1 = -m1;
-        if (s2 == 1) m2 = -m2;
+        if (s1 == 1)
+            m1 = -m1;
+        if (s2 == 1)
+            m2 = -m2;
 
         int result = m1 + m2;
         int sign = result < 0 ? 1 : 0;
         result = Math.abs(result);
 
         while (result > 0x1FF) {
-             result >>= 1;
-             e1++;
-            };
+            result >>= 1;
+            e1++;
+        }
+        ;
         while (result < 0x100 && result != 0) {
             result <<= 1;
-             e1--;
+            e1--;
         }
 
         return (sign << 15) | ((e1 & 0x7F) << 8) | (result & 0xFF);
@@ -1762,15 +1773,15 @@ public class CPU implements AutoCloseable {
     /**
      * Raises a machine fault according to the ISA specification.
      * Machine Fault IDs:
-     *   0 = Illegal Memory Access to Reserved Locations (0-5)
-     *   1 = Illegal TRAP code
-     *   2 = Illegal Operation Code
-     *   3 = Illegal Memory Address beyond 2047
+     * 0 = Illegal Memory Access to Reserved Locations (0-5)
+     * 1 = Illegal TRAP code
+     * 2 = Illegal Operation Code
+     * 3 = Illegal Memory Address beyond 2047
      *
      * Per ISA spec:
-     *   - Store fault ID in Memory[1] and MFR register
-     *   - Save current PC in Memory[4]
-     *   - Jump to fault handler (address read from Memory[1] or fixed location)
+     * - Store fault ID in Memory[1] and MFR register
+     * - Save current PC in Memory[4]
+     * - Jump to fault handler (address read from Memory[1] or fixed location)
      *
      * @param faultId The fault ID (0-3)
      */
@@ -1823,13 +1834,13 @@ public class CPU implements AutoCloseable {
     /**
      * Executes a TRAP instruction according to the ISA specification.
      * TRAP instruction format (opcode 30₈):
-     *   - Bits [4:0] contain the trap code (0-31)
+     * - Bits [4:0] contain the trap code (0-31)
      *
      * Per ISA spec:
-     *   - Save (PC + 1) to Memory[2]
-     *   - Read trap table base address from Memory[0]
-     *   - Compute handler address: Memory[trapTableBase + trapCode]
-     *   - Jump to handler address
+     * - Save (PC + 1) to Memory[2]
+     * - Read trap table base address from Memory[0]
+     * - Compute handler address: Memory[trapTableBase + trapCode]
+     * - Jump to handler address
      *
      * @param trapCode The trap code from instruction bits [4:0]
      */
@@ -1873,9 +1884,9 @@ public class CPU implements AutoCloseable {
 
         bus.post(new PCChanged(PC));
         bus.post(new MessageChanged("TRAP " + trapCode + ": jumped to handler at " + handlerAddr +
-                                    " (return addr " + returnAddr + " saved at Mem[2])"));
+                " (return addr " + returnAddr + " saved at Mem[2])"));
         System.out.printf("TRAP executed: code=%d, table_base=%o, handler_ptr_addr=%o, handler=%o, return=%o%n",
-                         trapCode, trapTableBase, handlerPtrAddr, handlerAddr, returnAddr);
+                trapCode, trapTableBase, handlerPtrAddr, handlerAddr, returnAddr);
     }
 
     @Override

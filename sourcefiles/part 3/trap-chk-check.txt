@@ -1,0 +1,19 @@
+LOC 0                                 ; Help from https://chatgpt.com/share/692c924b-3710-8007-97e7-aa4f106f5f41
+TRAP_TABLE_BASE:   Data TRAP_VECTOR   ; Mem[0]: base address of trap table
+MFR_WORD:          Data 0             ; Mem[1]: MFR / fault ID (used by raiseMachineFault)
+TRAP_RET_ADDR:     Data 0             ; Mem[2]: return PC+1 (written by TRAP)
+RES3:              Data 0             ; Mem[3]
+FAULT_PC:          Data 0             ; Mem[4]: PC saved on fault
+RES5:              Data 0             ; Mem[5]
+TRAP_VECTOR: Data TRAP0_HANDLER       ; trap code 0
+        Data 0                        ; trap code 1 (unused)
+        Data 0                        ; trap code 2
+        Data 0                        ; trap code 3
+WAIT_FOR_KBD: CHK 0,0                 ; CHK R0, device 0 (keyboard),    ; R0 = 0 => not ready, 1 => ready                   
+        JZ      0,0,WAIT_FOR_KBD      ; if R0 == 0, loop until keyboard ready
+        LDR     1,0,MSGCHAR           ; Print fixed char via TRAP 0 R1 := Mem[MSGCHAR] (ASCII char to print)
+        TRAP    0                     ; trap code 0: - PC+1 stored in Mem[2],  - trap table base = Mem[0], - jumps to handler at [Mem[0] + 0]
+AFTER_TRAP: HLT                                     
+MSGCHAR: Data 65                ; 'A' in ASCII 
+TRAP0_HANDLER: OUT     1,1             ; Handler writes R1 to console output and returns to user code using Mem[2]. OUT R1, device 1 (printer/console output)
+               JSR     0,2,1           ; TRAP stored PC+1 into Mem[2]. Use PC with indirect addressing to go to Mem[2] value. PC <- [2]; I=1 means indirect via Mem[2]

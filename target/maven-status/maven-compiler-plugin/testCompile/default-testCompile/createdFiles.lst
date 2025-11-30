@@ -1,4 +1,5 @@
 group11/core/ArithmeticLogicalInstructionsTest.class
+group11/core/ChkTrapInstructionsTest.class
 group11/core/TransferInstructionsTest.class
 group11/core/LoadStoreInstructionsTest.class
 group11/core/ShiftRotateInstructionsTest.class

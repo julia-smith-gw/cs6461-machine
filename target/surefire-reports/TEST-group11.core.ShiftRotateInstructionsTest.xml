@@ -12,7 +12,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="US"/>
     <property name="sun.boot.library.path" value="/Library/Java/JavaVirtualMachines/jdk-24.jdk/Contents/Home/lib"/>
-    <property name="sun.java.command" value="/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire/surefirebooter-20251102125638110_3.jar /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire 2025-11-02T12-56-38_064-jvmRun1 surefire-20251102125638110_1tmp surefire_0-20251102125638110_2tmp"/>
+    <property name="sun.java.command" value="/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire/surefirebooter-20251130135549022_3.jar /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire 2025-11-30T13-55-48_977-jvmRun1 surefire-20251130135549022_1tmp surefire_0-20251130135549022_2tmp"/>
     <property name="http.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/test-classes:/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/classes:/Users/juliasmith/.m2/repository/org/junit/jupiter/junit-jupiter/5.12.1/junit-jupiter-5.12.1.jar:/Users/juliasmith/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.12.1/junit-jupiter-api-5.12.1.jar:/Users/juliasmith/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/juliasmith/.m2/repository/org/junit/platform/junit-platform-commons/1.12.1/junit-platform-commons-1.12.1.jar:/Users/juliasmith/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/juliasmith/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.12.1/junit-jupiter-params-5.12.1.jar:/Users/juliasmith/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.12.1/junit-jupiter-engine-5.12.1.jar:/Users/juliasmith/.m2/repository/org/junit/platform/junit-platform-engine/1.12.1/junit-platform-engine-1.12.1.jar:"/>
@@ -29,7 +29,7 @@
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="apple.awt.application.name" value="ForkedBooter"/>
-    <property name="surefire.real.class.path" value="/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire/surefirebooter-20251102125638110_3.jar"/>
+    <property name="surefire.real.class.path" value="/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire/surefirebooter-20251130135549022_3.jar"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="ftp.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.runtime.version" value="24.0.2+12-54"/>
@@ -57,28 +57,28 @@
     <property name="socksNonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.class.version" value="68.0"/>
   </properties>
-  <testcase name="RRC_rotation_by_8_swaps_high_low_bytes" classname="group11.core.ShiftRotateInstructionsTest" time="0.001"/>
+  <testcase name="RRC_rotation_by_8_swaps_high_low_bytes" classname="group11.core.ShiftRotateInstructionsTest" time="0.002"/>
   <testcase name="SRC_count_zero_is_noop" classname="group11.core.ShiftRotateInstructionsTest" time="0.001"/>
   <testcase name="RRC_right_rotates_bits_back_in_from_left" classname="group11.core.ShiftRotateInstructionsTest" time="0.0"/>
-  <testcase name="RRC_left_rotates_bits_back_in_from_right" classname="group11.core.ShiftRotateInstructionsTest" time="0.001"/>
-  <testcase name="SRC_right_logical_inserts_zeros" classname="group11.core.ShiftRotateInstructionsTest" time="0.003">
+  <testcase name="RRC_left_rotates_bits_back_in_from_right" classname="group11.core.ShiftRotateInstructionsTest" time="0.0"/>
+  <testcase name="SRC_right_logical_inserts_zeros" classname="group11.core.ShiftRotateInstructionsTest" time="0.004">
     <system-out><![CDATA[SRC executed: R1 = 2816 (count=4, R)
 ]]></system-out>
   </testcase>
-  <testcase name="RRC_count_zero_is_noop" classname="group11.core.ShiftRotateInstructionsTest" time="0.001"/>
-  <testcase name="SRC_right_logical_count_15_boundary" classname="group11.core.ShiftRotateInstructionsTest" time="0.0">
+  <testcase name="RRC_count_zero_is_noop" classname="group11.core.ShiftRotateInstructionsTest" time="0.0"/>
+  <testcase name="SRC_right_logical_count_15_boundary" classname="group11.core.ShiftRotateInstructionsTest" time="0.001">
     <system-out><![CDATA[SRC executed: R1 = 1 (count=15, R)
 ]]></system-out>
   </testcase>
-  <testcase name="SRC_left_logical_shifts_in_zeros" classname="group11.core.ShiftRotateInstructionsTest" time="0.001">
+  <testcase name="SRC_left_logical_shifts_in_zeros" classname="group11.core.ShiftRotateInstructionsTest" time="0.0">
     <system-out><![CDATA[SRC executed: R0 = 192 (count=6, L)
 ]]></system-out>
   </testcase>
-  <testcase name="SRC_right_arithmetic_preserves_sign_bit" classname="group11.core.ShiftRotateInstructionsTest" time="0.0">
+  <testcase name="SRC_right_arithmetic_preserves_sign_bit" classname="group11.core.ShiftRotateInstructionsTest" time="0.001">
     <system-out><![CDATA[SRC executed: R2 = 61952 (count=3, R)
 ]]></system-out>
   </testcase>
-  <testcase name="SRC_left_logical_masks_to_16_bits" classname="group11.core.ShiftRotateInstructionsTest" time="0.001">
+  <testcase name="SRC_left_logical_masks_to_16_bits" classname="group11.core.ShiftRotateInstructionsTest" time="0.0">
     <system-out><![CDATA[SRC executed: R3 = 53248 (count=12, L)
 ]]></system-out>
   </testcase>

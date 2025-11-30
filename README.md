@@ -27,9 +27,8 @@ Tests for checking the correctness/completeness of our instruction implementatio
 The simulator interface looks much like the one on the ISA document. From left to right on the top, we see we have GPR inputs (general purpose registers), IXR inputs (index registers), the PC (program counter), 
 MAR (the memory address register), MBR (memory buffer register), and IR (instruction register). The very far right on the top has a big area for showing cache debug dumps. In the middle, we see we have octal input (our main input field), as well as some control buttons (explained more below). Finally, the bottom section is occupied by a textArea that displays error or execution messages if applicable, as well as a console input area that will allow the user to put words into programs. If the program prompts you for input, enter it in the bottom right and click 'Submit'.
 
-### TEST PROGRAM 1 ###
-The simulator comes pre-loaded with a nominal test file that prompts the user for 20 numbers, prints them to the console, prompts the user for another number (the target), and then finds the target's closest number from the original 20. When prompted for input, the program will temporarily halt. To continue, enter a string of space-separated numbers in the lower-right input area, and then click 'Submit'.
-The final closest number is displayed in octal in GPR3. 
+### TEST PROGRAM 2 ###
+The simulator comes pre-loaded with a nominal test file that prints out a paragraph from a file, prompts the user for a word (the target), and then finds the word from the read-in paragraph. If the word is found, the program prints the word, the sentence number, and the word number within the sentence. If the word is not found, the program prints 'Not found' When prompted for input, the program will temporarily halt. To continue, enter a string in the lower-right input area, and then click 'Submit'.
 IMPORTANT: This file starts from PC counter 6 (octal 000006). Make sure to enter this PC if you use this nominal test file. 
 
 ### PROVIDING OCTAL INPUTS ###

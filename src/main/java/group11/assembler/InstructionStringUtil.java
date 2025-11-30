@@ -1,5 +1,4 @@
 package group11.assembler;
-
 import java.util.Arrays;
 
 /**
@@ -16,6 +15,9 @@ public class InstructionStringUtil {
 
     public static String extractOp(String[] instructionParts, String label) {
         String op;
+        System.out.println("isnntruction parts");
+        System.out.println(Arrays.toString(instructionParts));
+        System.out.println(label);
         if (label == null) {
             op = instructionParts[0];
         } else {

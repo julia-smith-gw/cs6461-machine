@@ -99,9 +99,9 @@ public class Cache {
     }
 
     /**
-     * Dumps all lines from cache, zeroing it out 
+     * Dumps all lines from cache, zeroing it out
      */
-    public void reset(){
+    public void reset() {
         CacheLine[] cacheLines = new CacheLine[CACHE_LINES];
         for (int i = 0; i < CACHE_LINES; i++)
             cacheLines[i] = new CacheLine();

@@ -14,14 +14,17 @@
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/assembler/OpcodeTable.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/CChanged.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/SetMAR.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/core/BranchPredictor.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/siminterface/MainPanel.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/SetConsoleInput.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/siminterface/OctalInputWithButton.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/IXRChanged.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/siminterface/BinaryField.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/SetIXR.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/MFRChanged.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/MARChanged.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/SetPC.java
+/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/events/BranchPredictionStatsChanged.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/siminterface/FileInput.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/core/RomLoader.java
 /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/src/main/java/group11/assembler/SymbolTable.java

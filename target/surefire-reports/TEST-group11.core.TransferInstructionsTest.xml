@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="group11.core.TransferInstructionsTest" time="0.011" tests="14" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="group11.core.TransferInstructionsTest" time="0.025" tests="14" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="24"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -12,7 +12,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="US"/>
     <property name="sun.boot.library.path" value="/Library/Java/JavaVirtualMachines/jdk-24.jdk/Contents/Home/lib"/>
-    <property name="sun.java.command" value="/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire/surefirebooter-20251102125638110_3.jar /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire 2025-11-02T12-56-38_064-jvmRun1 surefire-20251102125638110_1tmp surefire_0-20251102125638110_2tmp"/>
+    <property name="sun.java.command" value="/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire/surefirebooter-20251130135549022_3.jar /Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire 2025-11-30T13-55-48_977-jvmRun1 surefire-20251130135549022_1tmp surefire_0-20251130135549022_2tmp"/>
     <property name="http.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/test-classes:/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/classes:/Users/juliasmith/.m2/repository/org/junit/jupiter/junit-jupiter/5.12.1/junit-jupiter-5.12.1.jar:/Users/juliasmith/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.12.1/junit-jupiter-api-5.12.1.jar:/Users/juliasmith/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/juliasmith/.m2/repository/org/junit/platform/junit-platform-commons/1.12.1/junit-platform-commons-1.12.1.jar:/Users/juliasmith/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/juliasmith/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.12.1/junit-jupiter-params-5.12.1.jar:/Users/juliasmith/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.12.1/junit-jupiter-engine-5.12.1.jar:/Users/juliasmith/.m2/repository/org/junit/platform/junit-platform-engine/1.12.1/junit-platform-engine-1.12.1.jar:"/>
@@ -29,7 +29,7 @@
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="apple.awt.application.name" value="ForkedBooter"/>
-    <property name="surefire.real.class.path" value="/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire/surefirebooter-20251102125638110_3.jar"/>
+    <property name="surefire.real.class.path" value="/Users/juliasmith/Desktop/CompSciStuff/CS6461/computer-simulator/target/surefire/surefirebooter-20251130135549022_3.jar"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="ftp.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.runtime.version" value="24.0.2+12-54"/>
@@ -57,11 +57,11 @@
     <property name="socksNonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="java.class.version" value="68.0"/>
   </properties>
-  <testcase name="JCC_taken_when_CC_bit_is_one" classname="group11.core.TransferInstructionsTest" time="0.001">
+  <testcase name="JCC_taken_when_CC_bit_is_one" classname="group11.core.TransferInstructionsTest" time="0.003">
     <system-out><![CDATA[EA debug: r=2 x=0 i=0 a5=21 ix=0 -> EA=21
 ]]></system-out>
   </testcase>
-  <testcase name="SOB_taken_when_result_gt_zero" classname="group11.core.TransferInstructionsTest" time="0.001">
+  <testcase name="SOB_taken_when_result_gt_zero" classname="group11.core.TransferInstructionsTest" time="0.003">
     <system-out><![CDATA[SOB exec: IR=35005
 SOB effective address R:0 ix: 0 i flag: 0 effective address: 0
 EA debug: r=2 x=0 i=0 a5=5 ix=0 -> EA=5
@@ -83,49 +83,56 @@ JGE taken: R1=0 ≥ 0 → PC=22
     <system-out><![CDATA[EA debug: r=1 x=0 i=0 a5=31 ix=0 -> EA=31
 ]]></system-out>
   </testcase>
-  <testcase name="JGE_not_taken_on_negative_value" classname="group11.core.TransferInstructionsTest" time="0.0">
+  <testcase name="JGE_not_taken_on_negative_value" classname="group11.core.TransferInstructionsTest" time="0.003">
     <system-out><![CDATA[JGE exec: IR=36426
 EA debug: r=1 x=0 i=0 a5=26 ix=0 -> EA=26
 JGE effective address R:1 ix: 0 i flag: 0 effective address: 22
 JGE not taken: R1=-1 < 0
 ]]></system-out>
   </testcase>
-  <testcase name="JSR_saves_return_in_R3_and_jumps_to_EA" classname="group11.core.TransferInstructionsTest" time="0.001">
-    <system-out><![CDATA[IXR add32
-EA debug: r=0 x=1 i=0 a5=14 ix=24 -> EA=40
+  <testcase name="JSR_saves_return_in_R3_and_jumps_to_EA" classname="group11.core.TransferInstructionsTest" time="0.003">
+    <system-out><![CDATA[EA debug: r=0 x=1 i=0 a5=14 ix=24 -> EA=40
+JSR effective address: EA=40
+JSR executed: Saved R3=401, PC=32
 ]]></system-out>
   </testcase>
-  <testcase name="RFS_loads_R0_with_immed_and_returns_to_R3" classname="group11.core.TransferInstructionsTest" time="0.0"/>
+  <testcase name="RFS_loads_R0_with_immed_and_returns_to_R3" classname="group11.core.TransferInstructionsTest" time="0.0">
+    <system-out><![CDATA[RFS executed: R0 <- 7, PC <- 512
+]]></system-out>
+  </testcase>
   <testcase name="JZ_not_taken_when_r_nonzero" classname="group11.core.TransferInstructionsTest" time="0.001">
     <system-out><![CDATA[EA debug: r=0 x=0 i=0 a5=7 ix=0 -> EA=7
-JZ effective address R:0 ix: 0 i flag: 0 effective address: 7
-JZ not taken: R0=5
+JZ effective address: EA=7
+PAR_PTR value at octal address 000356 (decimal 238) prior to JZ:  address 238 value: 0  address 239 value: 0JZ not taken, R is not 0: R0=5
 ]]></system-out>
   </testcase>
-  <testcase name="JNE_taken_when_r_nonzero" classname="group11.core.TransferInstructionsTest" time="0.0">
+  <testcase name="JNE_taken_when_r_nonzero" classname="group11.core.TransferInstructionsTest" time="0.001">
     <system-out><![CDATA[EA debug: r=1 x=0 i=0 a5=31 ix=0 -> EA=31
 ]]></system-out>
   </testcase>
   <testcase name="JZ_taken_when_r_is_zero" classname="group11.core.TransferInstructionsTest" time="0.001">
     <system-out><![CDATA[EA debug: r=0 x=0 i=0 a5=14 ix=0 -> EA=14
-JZ effective address R:0 ix: 0 i flag: 0 effective address: 12
-JZ taken: R0=0 → PC=12
+JZ effective address: EA=14
+PAR_PTR value at octal address 000356 (decimal 238) prior to JZ:  address 238 value: 0  address 239 value: 0JZ taken, R is 0: R0=0 → PC=12
 ]]></system-out>
   </testcase>
   <testcase name="JMA_with_index_and_indirect_addressing" classname="group11.core.TransferInstructionsTest" time="0.0">
-    <system-out><![CDATA[IXR add50
-EA debug: r=0 x=2 i=1 a5=12 ix=50 -> EA=115
+    <system-out><![CDATA[EA debug: r=0 x=2 i=1 a5=12 ix=50 -> EA=115
+JMA effective address: EA=115
+JMA executed: PC <- 77
 ]]></system-out>
   </testcase>
-  <testcase name="SOB_not_taken_when_result_eq_zero" classname="group11.core.TransferInstructionsTest" time="0.0">
+  <testcase name="SOB_not_taken_when_result_eq_zero" classname="group11.core.TransferInstructionsTest" time="0.001">
     <system-out><![CDATA[SOB exec: IR=35005
 SOB effective address R:0 ix: 0 i flag: 0 effective address: 0
 EA debug: r=2 x=0 i=0 a5=5 ix=0 -> EA=5
 SOB not taken: R2 1→0
 ]]></system-out>
   </testcase>
-  <testcase name="JMA_unconditional_jump_direct" classname="group11.core.TransferInstructionsTest" time="0.0">
+  <testcase name="JMA_unconditional_jump_direct" classname="group11.core.TransferInstructionsTest" time="0.001">
     <system-out><![CDATA[EA debug: r=0 x=0 i=0 a5=37 ix=0 -> EA=37
+JMA effective address: EA=37
+JMA executed: PC <- 31
 ]]></system-out>
   </testcase>
 </testsuite>
